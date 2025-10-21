@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intraoperative Anesthesia Record</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            border-color: #3b82f6;
+            background-color: #3b82f6;
+            color: white;
+        }
+        .sub-tab-button {
+            transition: all 0.3s ease;
+             border-bottom: 2px solid transparent;
+        }
+        .sub-tab-button.active {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .form-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .table-input {
+            width: 100%;
+            padding: 0.375rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 13px;
+        }
+        .table-input:disabled, .table-input[readonly] {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+        th, td {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            vertical-align: top;
+        }
+        .modal {
+            z-index: 50;
+        }
+        .time-display-span.has-value {
+            color: #1f2937;
+        }
+        .time-input-field {
+            border: none;
+            background-color: transparent;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 0.25rem 0.5rem;
+            cursor: text;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+        @keyframes highlight-fade {
+            from { background-color: #fefcbf; }
+            to { background-color: transparent; }
+        }
+        .highlight {
+            animation: highlight-fade 2s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-2 sm:p-4">
+    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-lg sm:text-xl font-bold text-blue-800">Intraoperative Anesthesia Record</h1>
+            <div class="flex space-x-2">
+                <button id="save-form-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm" title="Save form data to browser">Save</button>
+                <button id="load-form-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm" title="Load last saved data">Load</button>
+                <button id="clear-form-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm" title="Clear all data from the form">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex flex-wrap justify-between items-center border-b border-gray-200 mb-4">
+             <div id="tab-buttons" class="flex flex-wrap">
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 active" data-tab="patient_info">Patient Info</button>
+                <button id="icu_handover-tab-btn" class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 hidden" data-tab="icu_handover">ICU Handover</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="timing">Timing</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="drugs">Drugs</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="gases">Gases</button>
+                <button id="blood_products-tab-btn" class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 hidden" data-tab="blood_products">Blood Products</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="vitals">Vital Signs</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="anaesthesia1">Anaesthesia 1</button>
+                <button class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600" data-tab="anaesthesia2">Anaesthesia 2</button>
+                <button id="abg-tab-btn" class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 hidden" data-tab="abg">ABG</button>
+                <button id="anticoagulant-tab-btn" class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 hidden" data-tab="anticoagulant">Anticoagulant</button>
+                <button id="interventions-tab-btn" class="tab-button text-sm py-1.5 px-3 font-semibold text-gray-600 border-b-2 border-transparent hover:bg-gray-100 hover:text-blue-600 hidden" data-tab="interventions">Interventions</button>
+            </div>
+             <div class="flex flex-wrap gap-2 py-1">
+                <button id="add-blood_products-section-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Blood Products</button>
+                <button id="remove-blood_products-section-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Blood Products</button>
+                <button id="add-abg-section-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ ABG</button>
+                <button id="remove-abg-section-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- ABG</button>
+                <button id="add-anticoagulant-section-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Anticoagulant</button>
+                <button id="remove-anticoagulant-section-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Anticoagulant</button>
+                <button id="add-interventions-section-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Interventions</button>
+                <button id="remove-interventions-section-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Interventions</button>
+                <button id="add-icu_handover-section-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ ICU Handover</button>
+                <button id="remove-icu_handover-section-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- ICU Handover</button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="tab-content">
+            <!-- Patient Info Tab -->
+            <div id="patient_info" class="tab-pane active pt-4">
+                 <div class="p-4 border rounded-lg bg-gray-50 space-y-4 max-w-3xl mx-auto">
+                    <h2 class="text-lg font-semibold text-blue-700 mb-2 border-b pb-2">Patient Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <label class="font-semibold text-gray-800">Patient Name</label>
+                            <input id="patient-name" type="text" class="table-input mt-1">
+                        </div>
+                         <div>
+                            <label class="font-semibold text-gray-800">Medical Record Number (MRN)</label>
+                            <input id="patient-mrn" type="text" class="table-input mt-1">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-gray-800">Age</label>
+                            <input id="patient-age" type="number" class="table-input mt-1">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                               <label class="font-semibold text-gray-800">Weight (kg)</label>
+                               <input id="patient-weight" type="number" class="table-input mt-1">
+                            </div>
+                            <div>
+                               <label class="font-semibold text-gray-800">Height (cm)</label>
+                               <input id="patient-height" type="number" class="table-input mt-1">
+                            </div>
+                        </div>
+                         <div class="md:col-span-2">
+                            <label class="font-semibold text-gray-800">Procedure Name</label>
+                            <input id="patient-procedure" type="text" class="table-input mt-1">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="font-semibold text-gray-800">Allergies</label>
+                            <textarea id="patient-allergies" class="table-input mt-1" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ICU Handover Tab -->
+            <div id="icu_handover" class="tab-pane hidden">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">ICU Patient Handover</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <!-- Vitals Section -->
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h4 class="font-semibold text-gray-700 mb-3">Vitals on Arrival</h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                <input type="text" id="icu-hr" placeholder="HR" class="table-input" aria-label="Heart Rate">
+                                <input type="text" id="icu-bp" placeholder="BP (e.g., 120/80)" class="table-input" aria-label="Blood Pressure">
+                                <input type="text" id="icu-spo2" placeholder="SpO2 (%)" class="table-input" aria-label="SpO2">
+                                <input type="text" id="icu-temp" placeholder="Temp (°C)" class="table-input" aria-label="Temperature">
+                                <input type="text" id="icu-cvp" placeholder="CVP" class="table-input" aria-label="CVP">
+                            </div>
+                        </div>
+
+                        <!-- Ventilator Section -->
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h4 class="font-semibold text-gray-700 mb-3">Ventilator Settings</h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                               <input type="text" id="icu-vent-mode" placeholder="Mode" class="table-input" aria-label="Ventilator Mode">
+                               <input type="text" id="icu-vent-fio2" placeholder="FiO2 (%)" class="table-input" aria-label="FiO2">
+                               <input type="text" id="icu-vent-peep" placeholder="PEEP" class="table-input" aria-label="PEEP">
+                               <input type="text" id="icu-vent-rate" placeholder="Rate" class="table-input" aria-label="Ventilator Rate">
+                               <input type="text" id="icu-vent-tv" placeholder="TV (ml)" class="table-input" aria-label="Tidal Volume">
+                               <input type="text" id="icu-vent-ps" placeholder="Pressure Support" class="table-input" aria-label="Pressure Support">
+                            </div>
+                        </div>
+
+                         <!-- Lines & Drains Section -->
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h4 class="font-semibold text-gray-700 mb-3">Lines & Drains</h4>
+                            <textarea id="icu-lines-drains" class="w-full table-input" rows="4" placeholder="e.g., Right IJ CVC, Left Radial Art-line, Foley Catheter, Chest tube..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (Infusions) -->
+                    <div class="p-4 border rounded-lg bg-gray-50 flex flex-col">
+                         <h4 class="font-semibold text-gray-700 mb-3">Active Infusions</h4>
+                         <div class="overflow-y-auto flex-grow">
+                             <table class="w-full text-left text-sm">
+                                 <thead>
+                                     <tr>
+                                         <th class="pb-2">Drug</th>
+                                         <th class="pb-2">Rate</th>
+                                         <th class="pb-2">Unit</th>
+                                         <th></th>
+                                     </tr>
+                                 </thead>
+                                 <tbody id="icu-infusions-table-body">
+                                     <!-- Infusion rows will be added here by JS -->
+                                 </tbody>
+                             </table>
+                         </div>
+                         <button id="add-icu-infusion-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm self-start text-xs">+ Add Infusion</button>
+                    </div>
+                </div>
+                 <!-- Notes Section -->
+                <div class="mt-6">
+                    <label class="font-semibold text-gray-700">Handover Notes</label>
+                    <textarea id="icu-handover-notes" class="w-full table-input mt-2" rows="4" placeholder="Any specific concerns, recent events, or plans from the ICU team..."></textarea>
+                </div>
+            </div>
+
+            <!-- Timing Tab -->
+            <div id="timing" class="tab-pane hidden pt-4">
+                <div class="p-4 border rounded-md bg-gray-50 space-y-4 max-w-2xl mx-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 items-start gap-3">
+                        <label class="font-semibold text-gray-800 pt-1.5">Anesthesia Type</label>
+                        <div class="col-span-2 space-y-2">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <input id="general-anesthesia-checkbox" type="checkbox" class="rounded"><label for="general-anesthesia-checkbox">General</label>
+                                    <button type="button" data-modal-id="ga-modal" class="modal-trigger text-blue-600 hover:underline text-xs">(Details)</button>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input id="spinal-anesthesia-checkbox" type="checkbox" class="rounded"><label for="spinal-anesthesia-checkbox">Spinal</label>
+                                    <button type="button" data-modal-id="spinal-modal" class="modal-trigger text-blue-600 hover:underline text-xs">(Details)</button>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input id="epidural-anesthesia-checkbox" type="checkbox" class="rounded"><label for="epidural-anesthesia-checkbox">Epidural</label>
+                                    <button type="button" data-modal-id="epidural-modal" class="modal-trigger text-blue-600 hover:underline text-xs">(Details)</button>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input id="cse-anesthesia-checkbox" type="checkbox" class="rounded"><label for="cse-anesthesia-checkbox">CSE</label>
+                                    <button type="button" data-modal-id="cse-modal" class="modal-trigger text-blue-600 hover:underline text-xs">(Details)</button>
+                                </div>
+                                 <div class="flex items-center space-x-2">
+                                    <input id="regional-anesthesia-checkbox" type="checkbox" class="rounded"><label for="regional-anesthesia-checkbox">Regional</label>
+                                    <button type="button" data-modal-id="regional-modal" class="modal-trigger text-blue-600 hover:underline text-xs">(Details)</button>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input id="mac-anesthesia-checkbox" type="checkbox" class="rounded"><label for="mac-anesthesia-checkbox">MAC</label>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input id="local-anesthesia-checkbox" type="checkbox" class="rounded"><label for="local-anesthesia-checkbox">Local</label>
+                                </div>
+                               <div class="flex items-center space-x-2">
+                                    <input id="sedation-anesthesia-checkbox" type="checkbox" class="rounded"><label for="sedation-anesthesia-checkbox">Sedation</label>
+                                </div>
+                            </div>
+                            <div class="pt-1">
+                                <input id="other-anesthesia-text" type="text" placeholder="Other / Free Text" class="table-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                        <label class="font-semibold text-gray-800">Anesthesia Time</label>
+                        <div class="time-container"></div>
+                        <div class="time-container"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                        <label class="font-semibold text-gray-800">Surgery Time</label>
+                         <div class="time-container"></div>
+                         <div class="time-container"></div>
+                    </div>
+
+                    <!-- Optional Timing Sections -->
+                    <div id="cpb-section" class="hidden grid grid-cols-1 sm:grid-cols-3 items-center gap-3 pt-4 border-t">
+                        <label class="font-semibold text-gray-800">CBP Time</label>
+                         <div class="time-container"></div>
+                         <div class="time-container"></div>
+                    </div>
+                    <div id="aortic-clamp-section" class="hidden grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                        <label class="font-semibold text-gray-800">Aortic Clamp Time</label>
+                         <div class="time-container"></div>
+                         <div class="time-container"></div>
+                    </div>
+                    <div id="circulatory-arrest-section" class="hidden grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                        <label class="font-semibold text-gray-800">Circulatory Arrest</label>
+                         <div class="time-container"></div>
+                         <div class="time-container"></div>
+                    </div>
+                    <div id="tourniquet-section" class="hidden grid grid-cols-1 sm:grid-cols-3 items-start gap-3 pt-4 border-t">
+                        <label class="font-semibold text-gray-800 pt-1.5">Tourniquet</label>
+                        <div class="col-span-2 space-y-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="time-container"></div>
+                                <div class="time-container"></div>
+                            </div>
+                            <input type="text" placeholder="Site" class="table-input" aria-label="Tourniquet Site">
+                        </div>
+                    </div>
+                     <div id="throat-pack-section" class="hidden grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                        <label class="font-semibold text-gray-800">Throat Pack</label>
+                        <div class="time-container"></div>
+                        <div class="time-container"></div>
+                    </div>
+                    
+                    <!-- Buttons to control optional sections -->
+                    <div class="pt-4 border-t flex flex-wrap gap-2">
+                        <button id="add-cpb-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ CBP</button>
+                        <button id="remove-cpb-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- CBP</button>
+
+                        <button id="add-aortic-clamp-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Aortic Clamp</button>
+                        <button id="remove-aortic-clamp-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Aortic Clamp</button>
+
+                        <button id="add-circulatory-arrest-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Circulatory Arrest</button>
+                        <button id="remove-circulatory-arrest-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Circulatory Arrest</button>
+
+                        <button id="add-tourniquet-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Tourniquet</button>
+                        <button id="remove-tourniquet-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Tourniquet</button>
+                        
+                        <button id="add-throat-pack-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg shadow-sm text-xs">+ Throat Pack</button>
+                        <button id="remove-throat-pack-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-sm text-xs hidden">- Throat Pack</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drugs Tab -->
+            <div id="drugs" class="tab-pane hidden space-y-6">
+                 <div class="flex space-x-6 border-b">
+                     <button class="sub-tab-button py-2 px-1 active" data-subtab="bolus">Bolus</button>
+                     <button class="sub-tab-button py-2 px-1" data-subtab="infusion">Infusion</button>
+                     <button class="sub-tab-button py-2 px-1" data-subtab="fluids">Fluids</button>
+                 </div>
+
+                <div id="bolus" class="sub-tab-content">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-gray-500">
+                            <thead class="text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col">Drug</th><th scope="col" class="w-16">Route</th><th scope="col" class="w-16">Unit</th><th scope="col" class="w-16">Dose</th><th scope="col">1st Time</th><th scope="col" class="w-16">Dose</th><th scope="col">2nd Time</th><th scope="col" class="w-16">Dose</th><th scope="col">3rd Time</th><th scope="col" class="w-16">Dose</th><th scope="col">4th Time</th><th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="bolus-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="infusion" class="sub-tab-content hidden">
+                    <div class="flex items-center space-x-3 mb-4 max-w-xs">
+                        <label for="infusion-weight" class="font-semibold text-gray-800">Weight for Calculation (kg):</label>
+                        <input id="infusion-weight" type="number" class="table-input" placeholder="Patient Weight">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-gray-500">
+                            <thead class="text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col">Drug</th>
+                                    <th scope="col">Unit</th>
+                                    <th scope="col">Rate / Qty</th>
+                                    <th scope="col">Start Time</th>
+                                    <th scope="col">End Time</th>
+                                    <th scope="col">Rate / Qty</th>
+                                    <th scope="col">Start Time</th>
+                                    <th scope="col">End Time</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="infusion-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="fluids" class="sub-tab-content hidden">
+                     <h2 class="font-semibold text-blue-700 mb-3">IV Fluid Administration</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-gray-500">
+                            <thead class="text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col">IV Fluid</th>
+                                    <th scope="col">Volume (ml)</th>
+                                    <th scope="col">Start Time</th>
+                                    <th scope="col">End Time</th>
+                                    <th scope="col"></th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="iv-fluids-table-body"></tbody>
+                        </table>
+                        <div class="mt-4 text-right pr-4 space-y-1">
+                             <div>
+                                <span class="font-bold text-gray-700">Total Fluid Volume: </span>
+                                <span id="total-fluid-volume" class="font-bold text-blue-600">0 ml</span>
+                            </div>
+                            <div id="fluid-breakdown-list" class="text-sm text-gray-600">
+                                <!-- Breakdown will be inserted here by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <button id="add-iv-fluid-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm">Add Fluid</button>
+                </div>
+                <button id="add-drug-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm">ADD</button>
+                <div id="drug-totals-summary" class="mt-6 p-4 border rounded-lg bg-gray-50">
+                     <h3 class="font-semibold text-blue-700 mb-2">Drug Totals</h3>
+                     <div id="drug-totals-list" class="text-sm space-y-1"></div>
+                </div>
+            </div>
+            
+            <!-- Gases Tab -->
+            <div id="gases" class="tab-pane hidden">
+                <h2 class="text-lg font-semibold text-blue-700 mb-4">Gases & Inhalation</h2>
+                <div class="space-y-6">
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h3 class="font-semibold text-gray-700 mb-3">Gases</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-2">
+                                <label class="font-medium text-gray-700">O2</label>
+                                <div class="input-grid">
+                                     <select class="table-input" aria-label="O2 Unit">
+                                        <option selected>%</option>
+                                        <option>L/min</option>
+                                    </select>
+                                    <input type="number" placeholder="Qty" class="table-input" aria-label="O2 Quantity">
+                                    <div class="time-container"></div>
+                                    <div class="time-container"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="font-medium text-gray-700">N2O</label>
+                                <div class="input-grid">
+                                    <select class="table-input" aria-label="N2O Unit">
+                                        <option selected>%</option>
+                                        <option>L/min</option>
+                                    </select>
+                                    <input type="number" placeholder="Qty" class="table-input" aria-label="N2O Quantity">
+                                    <div class="time-container"></div>
+                                    <div class="time-container"></div>
+                                </div>
+                            </div>
+                             <div class="space-y-2">
+                                <label class="font-medium text-gray-700">Air</label>
+                                <div class="input-grid">
+                                    <select class="table-input" aria-label="Air Unit">
+                                        <option selected>%</option>
+                                        <option>L/min</option>
+                                    </select>
+                                    <input type="number" placeholder="Qty" class="table-input" aria-label="Air Quantity">
+                                    <div class="time-container"></div>
+                                    <div class="time-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                         <h3 class="font-semibold text-gray-700 mb-3">Inhalation</h3>
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-6 gap-4 items-center">
+                                <input type="text" placeholder="Drug" class="table-input col-span-2" aria-label="Inhalation Drug">
+                                <input type="text" placeholder="Unit" class="table-input" aria-label="Inhalation Unit">
+                                <input type="number" placeholder="Qty" class="table-input" aria-label="Inhalation Quantity">
+                                <div class="time-container"></div>
+                                <div class="time-container"></div>
+                            </div>
+                            <div class="grid grid-cols-6 gap-4 items-center">
+                                <input type="text" placeholder="Drug" class="table-input col-span-2" aria-label="Inhalation Drug 2">
+                                <input type="text" placeholder="Unit" class="table-input" aria-label="Inhalation Unit 2">
+                                <input type="number" placeholder="Qty" class="table-input" aria-label="Inhalation Quantity 2">
+                                <div class="time-container"></div>
+                                <div class="time-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blood Products Tab -->
+            <div id="blood_products" class="tab-pane hidden">
+                 <h2 class="font-semibold text-blue-700 mb-3">Blood Product Transfusion</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-500">
+                        <thead class="text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col">Product</th><th scope="col">Unit #</th><th scope="col" class="w-24">No. of Units</th><th scope="col" class="w-24">Volume (ml)</th><th scope="col">Start Time</th><th scope="col">End Time</th><th scope="col">Notes / Reactions</th><th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="blood-products-table-body"></tbody>
+                    </table>
+                     <div class="mt-4 text-right pr-4 space-y-1">
+                        <div>
+                            <span class="font-bold text-gray-700">Total Blood Product Volume: </span>
+                            <span id="total-blood-volume" class="font-bold text-blue-600">0 ml</span>
+                        </div>
+                        <div>
+                            <span class="font-bold text-gray-700">Total Units: </span>
+                            <span id="total-blood-units" class="font-bold text-blue-600">0</span>
+                        </div>
+                        <div id="blood-breakdown-list" class="text-sm text-gray-600 border-t pt-1 mt-1">
+                            <!-- Breakdown will be inserted here by JS -->
+                        </div>
+                    </div>
+                </div>
+                <button id="add-blood-product-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm">Add Product</button>
+            </div>
+           
+            <!-- Vital Signs Tab -->
+            <div id="vitals" class="tab-pane hidden">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <h2 class="text-lg font-semibold text-blue-700">Vital Signs Monitoring</h2>
+                    <div class="flex items-center space-x-4 flex-wrap">
+                         <button id="toggle-vitals-view-btn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm">Show Chart</button>
+                        <div id="vitals-chart-controls" class="hidden items-center space-x-3 flex-wrap">
+                            <span class="font-semibold">Show:</span>
+                            <label class="flex items-center space-x-1 text-sm"><input type="checkbox" class="rounded chart-control" data-dataset-index="0" checked><span>BP</span></label>
+                            <label class="flex items-center space-x-1 text-sm"><input type="checkbox" class="rounded chart-control" data-dataset-index="2" checked><span>MAP</span></label>
+                            <label class="flex items-center space-x-1 text-sm"><input type="checkbox" class="rounded chart-control" data-dataset-index="3" checked><span>Pulse</span></label>
+                            <label class="flex items-center space-x-1 text-sm"><input type="checkbox" class="rounded chart-control" data-dataset-index="4" checked><span>SpO2</span></label>
+                            <label class="flex items-center space-x-1 text-sm"><input type="checkbox" class="rounded chart-control" data-dataset-index="5" checked><span>ETCO2</span></label>
+                            <label class="flex items-center space-x-1 text-sm chart-control-temp hidden"><input type="checkbox" class="rounded chart-control" data-dataset-index="6" checked><span>Temp</span></label>
+                            <label class="flex items-center space-x-1 text-sm chart-control-cvp hidden"><input type="checkbox" class="rounded chart-control" data-dataset-index="7" checked><span>CVP</span></label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label for="vital-interval" class="font-semibold text-gray-700">Time Interval:</label>
+                            <select id="vital-interval" class="table-input w-40">
+                                <option value="manual" selected>Manual</option>
+                                <option value="5">5 mins</option>
+                                <option value="10">10 mins</option>
+                                <option value="15">15 mins</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vitals-chart-container" class="hidden my-4 h-96">
+                    <canvas id="vitalsChart"></canvas>
+                </div>
+
+                 <div id="vitals-table-container" class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-500">
+                        <thead class="text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" rowspan="2" class="px-6 py-3 align-bottom">Time</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 align-bottom">Pulse</th>
+                                <th scope="col" colspan="3" class="px-6 py-3 text-center border-b">ABP (mmHg)</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 align-bottom">ETCO2</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 align-bottom">SpO2 (%)</th>
+                                
+                                <!-- Optional columns at the end -->
+                                <th scope="col" rowspan="2" class="px-6 py-3 temp-col hidden align-bottom">Temp (°C)</th>
+                                <th scope="col" colspan="3" class="px-6 py-3 pap-col hidden text-center border-b">PAP</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 cvp-col hidden align-bottom">CVP</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 urine-col hidden align-bottom">Urine (ml)</th>
+                                <th scope="col" rowspan="2" class="px-6 py-3 align-bottom"></th>
+                            </tr>
+                            <tr>
+                                <th scope="col" class="px-6 py-3">SBP</th>
+                                <th scope="col" class="px-6 py-3">DBP</th>
+                                <th scope="col" class="px-6 py-3">MAP</th>
+                                <!-- PAP sub-headers -->
+                                <th scope="col" class="px-6 py-3 pap-col hidden">sPAP</th>
+                                <th scope="col" class="px-6 py-3 pap-col hidden">dPAP</th>
+                                <th scope="col" class="px-6 py-3 pap-col hidden">mPAP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vitals-table-body"></tbody>
+                    </table>
+                    <div class="mt-4 text-right pr-4">
+                        <span class="font-bold text-gray-700 urine-total hidden">Total Urine Output: </span>
+                        <span id="total-urine-output" class="font-bold text-blue-600 urine-total hidden">0 ml</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button id="add-vital-row" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm">Add Reading</button>
+                    <button id="add-temp-column-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm">+ Temp</button>
+                    <button id="remove-temp-column-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm hidden">- Temp</button>
+                    <button id="add-cvp-column-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm">+ CVP</button>
+                    <button id="remove-cvp-column-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm hidden">- CVP</button>
+                    <button id="add-urine-column-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm">+ Urine</button>
+                    <button id="remove-urine-column-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm hidden">- Urine</button>
+                    <button id="add-pap-column-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm">+ PAP</button>
+                    <button id="remove-pap-column-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm hidden">- PAP</button>
+                </div>
+            </div>
+
+            <!-- Anaesthesia 1 Tab -->
+            <div id="anaesthesia1" class="tab-pane hidden">
+                <h2 class="text-lg font-semibold text-blue-700 mb-4">Anaesthesia Details (Part 1)</h2>
+                <div class="p-6 border rounded-lg bg-gray-50 space-y-6 max-w-3xl mx-auto">
+                    <!-- IV Section -->
+                    <div>
+                        <div id="iv-lines-container">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4 flex-grow">
+                                    <label class="font-semibold text-gray-800">IV:</label>
+                                    <input type="text" placeholder="Size" class="table-input" aria-label="IV Size">
+                                    <input type="text" placeholder="Site" class="table-input col-span-2" aria-label="IV Site">
+                                </div>
+                                <div class="w-8"></div> <!-- Spacer for delete button alignment -->
+                            </div>
+                        </div>
+                        <button id="add-iv-line" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded-lg shadow-sm" title="Add another IV line">+ Add IV</button>
+                    </div>
+
+                    <!-- Art Section -->
+                    <div>
+                        <div id="art-lines-container">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4 flex-grow">
+                                    <label class="font-semibold text-gray-800">Art:</label>
+                                    <input type="text" placeholder="Size" class="table-input" aria-label="Art Size">
+                                    <input type="text" placeholder="Site" class="table-input col-span-2" aria-label="Art Site">
+                                </div>
+                                <div class="w-8"></div>
+                            </div>
+                        </div>
+                        <button id="add-art-line" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded-lg shadow-sm" title="Add another Art line">+ Add Art</button>
+                    </div>
+
+                    <!-- CVP Section -->
+                    <div>
+                        <div id="cvp-lines-container">
+                           <div class="flex items-center gap-2 mb-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4 flex-grow">
+                                    <label class="font-semibold text-gray-800">CVP:</label>
+                                    <input type="text" placeholder="Size" class="table-input" aria-label="CVP Size">
+                                    <input type="text" placeholder="Site" class="table-input col-span-2" aria-label="CVP Site">
+                                </div>
+                                <div class="w-8"></div>
+                            </div>
+                        </div>
+                        <button id="add-cvp-line" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded-lg shadow-sm" title="Add another CVP line">+ Add CVP</button>
+                    </div>
+
+                    <!-- Other fields -->
+                    <div class="pt-4 border-t border-gray-200 space-y-4">
+                         <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                            <label for="pa-line" class="font-semibold text-gray-800">PA line (Swan Ganz):</label>
+                            <input id="pa-line" type="text" class="table-input col-span-3">
+                        </div>
+                         <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                            <label for="temp-line" class="font-semibold text-gray-800">Temp:</label>
+                            <input id="temp-line" type="text" class="table-input col-span-3">
+                        </div>
+                         <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                            <label for="urinary-cath" class="font-semibold text-gray-800">Urinary Cath:</label>
+                            <input id="urinary-cath" type="text" class="table-input col-span-3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anaesthesia 2 Tab -->
+            <div id="anaesthesia2" class="tab-pane hidden">
+                 <h2 class="text-lg font-semibold text-blue-700 mb-4">Anaesthesia Details (Part 2)</h2>
+                 <div class="form-section">
+                    <!-- Ventilation -->
+                    <div class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                        <h3 class="font-semibold text-gray-700">Ventilation</h3>
+                        <div class="flex items-center space-x-4">
+                             <label class="flex items-center space-x-2"><input type="radio" name="ventilation_type" value="spont" class="rounded"><span>Spont.</span></label>
+                             <label class="flex items-center space-x-2"><input type="radio" name="ventilation_type" value="mechanical" class="rounded"><span>Mechanical</span></label>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                           <input type="text" placeholder="TV" class="table-input" aria-label="Tidal Volume">
+                           <input type="text" placeholder="FR" class="table-input" aria-label="Flow Rate">
+                           <input type="text" placeholder="MV" class="table-input" aria-label="Minute Volume">
+                           <input type="text" placeholder="AP" class="table-input" aria-label="Airway Pressure">
+                           <input type="text" placeholder="PEEP" class="table-input" aria-label="PEEP">
+                           <input type="text" placeholder="I/E Ratio" class="table-input" aria-label="I/E Ratio">
+                        </div>
+                    </div>
+                    <!-- Monitoring -->
+                    <div class="p-4 border rounded-lg bg-gray-50 space-y-4">
+                        <h3 class="font-semibold text-gray-700">Monitoring</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                           <div class="space-y-3">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>ETCO2</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>SPO2</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>NIBP</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Temp</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>ECG</span></label>
+                           </div>
+                           <textarea placeholder="Others" class="table-input h-32" rows="5" aria-label="Other Monitoring"></textarea>
+                        </div>
+                    </div>
+                    <!-- Blood Loss -->
+                    <div class="p-4 border rounded-lg bg-gray-50 space-y-4 col-span-1 md:col-span-2">
+                         <h3 class="font-semibold text-gray-700">Blood Loss & Patient Status</h3>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="text" placeholder="Blood Loss" class="table-input" aria-label="Blood Loss">
+                             <input type="text" placeholder="Patient Position" class="table-input" aria-label="Patient Position">
+                         </div>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- ABG Tab -->
+            <div id="abg" class="tab-pane hidden">
+                <h2 class="font-semibold text-blue-700 mb-3">ABG Blood Gas</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-500">
+                        <thead class="text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col">Time</th><th scope="col">pH</th><th scope="col">PaO2</th><th scope="col">PaCO2</th><th scope="col">HCO3</th><th scope="col">Base excess</th><th scope="col">Hb</th><th scope="col">Serum K+</th><th scope="col">Lactate</th><th scope="col">Blood Sugar</th><th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="abg-table-body"></tbody>
+                    </table>
+                </div>
+                <button id="add-abg-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm">Add Reading</button>
+            </div>
+
+            <!-- Anticoagulant Tab -->
+            <div id="anticoagulant" class="tab-pane hidden">
+                <h2 class="font-semibold text-blue-700 mb-3">Anticoagulant Status Monitoring</h2>
+                <div class="p-4 border rounded-md bg-gray-50 space-y-4">
+                    <div class="flex items-center space-x-3 max-w-xs">
+                        <label for="baseline-act" class="font-semibold text-gray-800">Baseline ACT:</label>
+                        <input id="baseline-act" type="text" class="table-input">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-gray-500">
+                            <thead class="text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th colspan="3" class="text-center border-b border-r">Heparin</th>
+                                    <th colspan="3" class="text-center border-b">Protamine</th>
+                                    <th class="border-b"></th>
+                                </tr>
+                                <tr>
+                                    <th class="border-r">Dose</th><th class="border-r">Time</th><th class="border-r">ACT</th><th class="border-r">Dose</th><th class="border-r">Time</th><th>ACT</th><th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="anticoagulant-table-body"></tbody>
+                        </table>
+                    </div>
+                     <button id="add-anticoagulant-row" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-md shadow-sm">Add Reading</button>
+                </div>
+            </div>
+            
+            <div id="interventions" class="tab-pane hidden">
+                 <h2 class="font-semibold text-blue-700 mb-3">Interventions</h2>
+                <textarea id="interventions-notes" placeholder="Record any interventions, critical events, or other notes here." class="w-full table-input" rows="12" aria-label="Interventions Notes"></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <!-- General Anesthesia Modal -->
+    <div id="ga-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-2xl">
+            <button class="modal-close-btn absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">General Anesthesia Details</h3>
+            <div class="space-y-4">
+                 <div>
+                    <label class="font-semibold text-gray-600 block mb-2">Airway Management</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="ett-checkbox" class="rounded"><span>ETT</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="lma-checkbox" class="rounded"><span>LMA</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Mask</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="dlt-checkbox" class="rounded"><span>DLT</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="blocker-checkbox" class="rounded"><span>Bronchial Blocker</span></label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+                        <div id="ett-details" class="hidden col-span-2">
+                             <input type="text" placeholder="ETT Size/Type" class="table-input">
+                        </div>
+                         <div id="ett-depth-details" class="hidden">
+                             <input type="text" placeholder="Depth (cm)" class="table-input">
+                        </div>
+                        <div id="lma-details" class="hidden col-span-3">
+                            <input type="text" placeholder="LMA Size" class="table-input">
+                        </div>
+                        <div id="dlt-details" class="hidden col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="text" placeholder="DLT Size/Type" class="table-input">
+                            <input type="text" placeholder="Depth (cm)" class="table-input">
+                        </div>
+                        <div id="blocker-details" class="hidden col-span-3">
+                            <input type="text" placeholder="Bronchial Blocker Size/Type" class="table-input">
+                        </div>
+                        <div id="dlt-intubation-method-details" class="hidden col-span-3 mt-3">
+                            <label class="font-semibold text-gray-600 text-sm block mb-2">DLT Intubation Method</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Direct Laryngoscopy</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Video Laryngoscopy</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Fiberoptic</span></label>
+                            </div>
+                            <textarea class="w-full table-input mt-2" rows="1" placeholder="DLT Intubation notes..."></textarea>
+                        </div>
+                        <div id="intubation-method-details" class="hidden col-span-3 mt-3">
+                            <label class="font-semibold text-gray-600 text-sm block mb-2">ETT Intubation Method</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Direct Laryngoscopy</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Video Laryngoscopy</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Fiberoptic</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Blind Nasal</span></label>
+                            </div>
+                            <textarea class="w-full table-input mt-2" rows="1" placeholder="Intubation notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                 <div class="pt-4 border-t">
+                    <label class="font-semibold text-gray-600">Induction</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>IV</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Inhalational</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Pre-O2</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>RSI</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>MRSI</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Cricoid pressure</span></label>
+                    </div>
+                    <textarea class="w-full table-input mt-2" rows="1" placeholder="Induction notes..."></textarea>
+                </div>
+                 <div class="pt-4 border-t">
+                    <label class="font-semibold text-gray-600">Maintenance</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-medium text-gray-600">Gases</h4>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>O2</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>N2O</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Air</span></label>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-medium text-gray-600">Inhalational</h4>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Sevoflurane</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Desflurane</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Isoflurane</span></label>
+                        </div>
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-medium text-gray-600">IV Drips</h4>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Fentanyl</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Remifentanil</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Propofol</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Dexmedetomidine</span></label>
+                        </div>
+                    </div>
+                    <textarea class="w-full table-input mt-2" rows="1" placeholder="Maintenance notes..."></textarea>
+                </div>
+                 <div class="pt-4 border-t">
+                    <label class="font-semibold text-gray-600">Reversal</label>
+                     <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Sugammadex</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Neostigmine/Glyco</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Neostigmine/Atropine</span></label>
+                    </div>
+                    <textarea class="w-full table-input mt-2" rows="1" placeholder="Reversal notes..."></textarea>
+                </div>
+            </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" class="modal-cancel-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" class="modal-save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spinal Anesthesia Modal -->
+    <div id="spinal-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-2xl">
+            <button class="modal-close-btn absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">Spinal Anesthesia Details</h3>
+            <div class="space-y-4">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-semibold text-gray-600">Technique</label>
+                        <div class="flex space-x-4 mt-2">
+                            <label class="flex items-center space-x-2"><input type="radio" name="spinal_technique" class="rounded"><span>Midline</span></label>
+                            <label class="flex items-center space-x-2"><input type="radio" name="spinal_technique" class="rounded"><span>Paramedian</span></label>
+                        </div>
+                    </div>
+                     <div>
+                        <label class="font-semibold text-gray-600">Patient Position</label>
+                        <div class="flex space-x-4 mt-2">
+                            <label class="flex items-center space-x-2"><input type="radio" name="spinal_position" class="rounded"><span>Sitting</span></label>
+                            <label class="flex items-center space-x-2"><input type="radio" name="spinal_position" class="rounded"><span>Lateral Decubitus</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" placeholder="Needle Type & Size" class="table-input">
+                    <input type="text" placeholder="Level of Injection (e.g., L3-L4)" class="table-input">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Local Infiltration</label>
+                    <input type="text" placeholder="e.g., Lidocaine 1% 5ml" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Local Anesthetic</label>
+                    <input type="text" placeholder="Drug & Dose (e.g., Bupivacaine 12.5mg)" class="table-input mt-1">
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Adjuvants</label>
+                    <input type="text" placeholder="Drug & Dose (e.g., Fentanyl 25mcg)" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Notes / Complications</label>
+                    <textarea class="w-full table-input mt-1" rows="2"></textarea>
+                </div>
+            </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" class="modal-cancel-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" class="modal-save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Epidural Anesthesia Modal -->
+    <div id="epidural-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-2xl">
+            <button class="modal-close-btn absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">Epidural Anesthesia Details</h3>
+            <div class="space-y-4">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-semibold text-gray-600">Technique</label>
+                        <div class="flex space-x-4 mt-2">
+                            <label class="flex items-center space-x-2"><input type="radio" name="epidural_technique" class="rounded"><span>Midline</span></label>
+                            <label class="flex items-center space-x-2"><input type="radio" name="epidural_technique" class="rounded"><span>Paramedian</span></label>
+                        </div>
+                    </div>
+                     <div>
+                        <label class="font-semibold text-gray-600">Patient Position</label>
+                        <div class="flex space-x-4 mt-2">
+                            <label class="flex items-center space-x-2"><input type="radio" name="epidural_position" class="rounded"><span>Sitting</span></label>
+                            <label class="flex items-center space-x-2"><input type="radio" name="epidural_position" class="rounded"><span>Lateral Decubitus</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" placeholder="Needle Type & Size (e.g., Tuohy 17G)" class="table-input">
+                    <input type="text" placeholder="Level of Injection (e.g., L3-L4)" class="table-input">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Test Dose</label>
+                    <input type="text" placeholder="e.g., Lidocaine 1.5% with epi 1:200,000 3ml" class="table-input mt-1">
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Catheter Insertion Depth (at skin)</label>
+                    <input type="text" placeholder="cm" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Local Anesthetic Bolus</label>
+                    <input type="text" placeholder="Drug & Dose (e.g., Bupivacaine 0.25% 10ml)" class="table-input mt-1">
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Infusion</label>
+                    <input type="text" placeholder="Drug & Rate (e.g., Bupivacaine 0.125% at 8ml/hr)" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Notes / Complications</label>
+                    <textarea class="w-full table-input mt-1" rows="2"></textarea>
+                </div>
+            </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" class="modal-cancel-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" class="modal-save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSE Anesthesia Modal -->
+    <div id="cse-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-3xl">
+            <button class="modal-close-btn absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">CSE (Combined Spinal-Epidural) Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                <!-- Spinal Part -->
+                <div class="space-y-4 border-r pr-6">
+                    <h4 class="font-semibold text-gray-700 border-b pb-2">Spinal Component</h4>
+                    <div class="grid grid-cols-1 gap-4">
+                        <input type="text" placeholder="Spinal Needle Type & Size" class="table-input">
+                        <input type="text" placeholder="Level of Injection (e.g., L3-L4)" class="table-input">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-gray-600 text-sm">Local Anesthetic</label>
+                        <input type="text" placeholder="Drug & Dose (e.g., Bupivacaine 12.5mg)" class="table-input mt-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-gray-600 text-sm">Adjuvants</label>
+                        <input type="text" placeholder="Drug & Dose (e.g., Fentanyl 25mcg)" class="table-input mt-1">
+                    </div>
+                </div>
+                <!-- Epidural Part -->
+                <div class="space-y-4">
+                    <h4 class="font-semibold text-gray-700 border-b pb-2">Epidural Component</h4>
+                     <div class="grid grid-cols-1 gap-4">
+                        <input type="text" placeholder="Epidural Needle Type & Size (e.g., Tuohy 17G)" class="table-input">
+                        <input type="text" placeholder="Level of Injection (e.g., L3-L4)" class="table-input">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-gray-600 text-sm">Test Dose</label>
+                        <input type="text" placeholder="e.g., Lidocaine 1.5% with epi" class="table-input mt-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-gray-600 text-sm">Catheter Insertion Depth (at skin)</label>
+                        <input type="text" placeholder="cm" class="table-input mt-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-gray-600 text-sm">Infusion</label>
+                        <input type="text" placeholder="Drug & Rate (e.g., Bupivacaine 0.125% at 8ml/hr)" class="table-input mt-1">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t">
+                <label class="font-semibold text-gray-600">Notes / Complications</label>
+                <textarea class="w-full table-input mt-1" rows="2"></textarea>
+            </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" class="modal-cancel-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" class="modal-save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regional Anesthesia Modal -->
+    <div id="regional-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-2xl">
+            <button class="modal-close-btn absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">Regional Anesthesia Details</h3>
+            <div class="space-y-4">
+                 <div>
+                    <label class="font-semibold text-gray-600">Block Type</label>
+                    <input type="text" placeholder="e.g., Interscalene, Axillary, Femoral, Popliteal" class="table-input mt-1">
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Guidance</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Ultrasound</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Nerve Stimulator</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" class="rounded"><span>Landmarks</span></label>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Needle</label>
+                    <input type="text" placeholder="Type & Size" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Local Anesthetic</label>
+                    <input type="text" placeholder="Drug, Concentration & Volume" class="table-input mt-1">
+                </div>
+                <div>
+                    <label class="font-semibold text-gray-600">Adjuvants</label>
+                    <input type="text" placeholder="e.g., Dexamethasone 4mg" class="table-input mt-1">
+                </div>
+                 <div>
+                    <label class="font-semibold text-gray-600">Notes / Complications</label>
+                    <textarea class="w-full table-input mt-1" rows="2" placeholder="e.g., Single shot, continuous catheter, any complications..."></textarea>
+                </div>
+            </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" class="modal-cancel-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" class="modal-save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="clear-confirm-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-md">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Confirm Clear</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to clear all data from this form? This action cannot be undone.</p>
+             <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-clear-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" id="confirm-clear-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Clear All Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Column Removal Confirmation Modal -->
+    <div id="remove-col-confirm-modal" class="modal fixed inset-0 bg-gray-800 bg-opacity-60 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl relative w-full max-w-md">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Confirm Remove Column</h3>
+            <p class="text-gray-600 mb-6">This column contains data. Are you sure you want to remove it? This action cannot be undone.</p>
+             <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-remove-col-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md">Cancel</button>
+                <button type="button" id="confirm-remove-col-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DATA AND CONSTANTS
+            const drugData = {
+                '': { units: [], routes: [] },
+                'Aminophylline': { units: ['mg', 'mg/kg/h'], routes: ['IV'] },
+                'Amiodarone': { units: ['mg', 'mg/min'], routes: ['IV'] },
+                'Ampicillin/Sulbactam': { units: ['g'], routes: ['IV'] },
+                'Atracurium': { units: ['mg', 'mcg/kg/min'], routes: ['IV'] },
+                'Atropine': { units: ['mcg'], routes: ['IV', 'IM'] },
+                'Bupivacaine': { units: ['mg'], routes: ['Epidural', 'Spinal', 'Local Infiltration'] },
+                'Calcium Chloride 10%': { units: ['g'], routes: ['IV'] },
+                'Calcium gluconate 10%': { units: ['g'], routes: ['IV'] },
+                'Cefazolin': { units: ['g', 'mg'], routes: ['IV', 'IM'] },
+                'Cefoxitin': { units: ['g', 'mg'], routes: ['IV', 'IM'] },
+                'Ceftriaxone': { units: ['g', 'mg'], routes: ['IV', 'IM'] },
+                'Cefuroxime': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Ciprofloxacin': { units: ['mg'], routes: ['IV'] },
+                'Cisatracurium': { units: ['mg', 'mcg/kg/min'], routes: ['IV'] },
+                'Clindamycin': { units: ['mg'], routes: ['IV'] },
+                'Dantrolene': { units: ['mg'], routes: ['IV'] },
+                'Depo-Medrol (Methylprednisolone)': { units: ['mg'], routes: ['IM', 'Intra-articular'] },
+                'Dexamethasone': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Dexmedetomidine': { units: ['mcg', 'mcg/kg/h'], routes: ['IV'] },
+                'Dextrose 50%': { units: ['ml', 'g'], routes: ['IV'] },
+                'Diclofenac (Voltaren)': { units: ['mg'], routes: ['IM', 'PR'] },
+                'Diphenhydramine': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Dobutamine': { units: ['mcg/kg/min'], routes: ['IV'] },
+                'Dopamine': { units: ['mcg/kg/min'], routes: ['IV'] },
+                'Enoxaparin (Clexane)': { units: ['mg'], routes: ['SC'] },
+                'Ephedrine': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Epinephrine (Adrenaline)': { units: ['mcg', 'mcg/kg/min', 'mcg/min'], routes: ['IV', 'IM', 'SC'] },
+                'Ertapenem': { units: ['g'], routes: ['IV', 'IM'] },
+                'Esmolol': { units: ['mg', 'mcg/kg/min'], routes: ['IV'] },
+                'Etomidate': { units: ['mg'], routes: ['IV'] },
+                'Fentanyl': { units: ['mcg', 'mcg/kg/h'], routes: ['IV', 'IM', 'Transdermal'] },
+                'Flumazenil': { units: ['mg'], routes: ['IV'] },
+                'Furosemide (Lasix)': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Gentamicin': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Glucagon': { units: ['mg'], routes: ['IV', 'IM', 'SC'] },
+                'Glycopyrrolate': { units: ['mcg'], routes: ['IV', 'IM'] },
+                'Heparin': { units: ['units', 'units/h'], routes: ['IV', 'SC'] },
+                'HN Insulin': { units: ['IU', 'IU/h'], routes: ['SC'] },
+                'HR Insulin (Actrapid)': { units: ['IU', 'IU/h'], routes: ['SC', 'IV'] },
+                'Hydralazine': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Hydrocortisone': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Ibuprofen': { units: ['mg'], routes: ['IV'] },
+                'Insulin': { units: ['IU', 'IU/h'], routes: ['SC', 'IV'] },
+                'Isosorbide Dinitrate': { units: ['mg'], routes: ['SL'] },
+                'Ketamine': { units: ['mg', 'mg/kg/min'], routes: ['IV', 'IM'] },
+                'Ketorolac': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Labetalol': { units: ['mg', 'mg/min'], routes: ['IV'] },
+                'Levofloxacin': { units: ['mg'], routes: ['IV'] },
+                'Lidocaine (Xylocaine)': { units: ['mg', 'mg/kg/hr', 'mg/hr'], routes: ['IV', 'Local Infiltration', 'Regional'] },
+                'Lidocaine (Xylocaine) Gel': { units: ['ml'], routes: ['Topical'] },
+                'Lidocaine (Xylocaine) Spray': { units: ['spray'], routes: ['Topical'] },
+                'Lornoxicam (Xefo)': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Magnesium Sulfate 10%': { units: ['g'], routes: ['IV', 'IM'] },
+                'Mannitol 20%': { units: ['g', 'ml', 'g/h', 'ml/h'], routes: ['IV'] },
+                'Meperidine (Pethidine)': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Meropenem': { units: ['mg', 'g'], routes: ['IV'] },
+                'Metoclopramide': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Metoprolol': { units: ['mg'], routes: ['IV'] },
+                'Metronidazole': { units: ['mg'], routes: ['IV'] },
+                'Morphine': { units: ['mg', 'mg/h', 'mg/kg/hr'], routes: ['IV', 'IM', 'SC'] },
+                'Naloxone': { units: ['mg'], routes: ['IV', 'IM', 'SC'] },
+                'Neostigmine (Prostigmin)': { units: ['mcg'], routes: ['IV'] },
+                'Nitroglycerin': { units: ['mcg', 'mcg/min'], routes: ['IV', 'SL', 'Transdermal'] },
+                'Nitroprusside': { units: ['mcg', 'mcg/min'], routes: ['IV'] },
+                'Norepinephrine (NORADRENALINE)': { units: ['mcg', 'mcg/kg/min', 'mcg/min'], routes: ['IV'] },
+                'Ondansetron': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Paracetamol': { units: ['mg'], routes: ['IV'] },
+                'Phenylephrine': { units: ['mcg', 'mcg/kg/min', 'mcg/min'], routes: ['IV'] },
+                'Phenytoin': { units: ['mg'], routes: ['IV'] },
+                'Piperacillin/Tazobactam': { units: ['g'], routes: ['IV'] },
+                'Plasma Protein 5%': { units: ['ml'], routes: ['IV'] },
+                'Potassium Chloride 15%, 20%': { units: ['mEq', 'mEq/h'], routes: ['IV'] },
+                'Promethazine': { units: ['mg'], routes: ['IV', 'IM', 'PR'] },
+                'Propofol': { units: ['mg', 'mg/kg/min'], routes: ['IV'] },
+                'Propranolol': { units: ['mg'], routes: ['IV'] },
+                'Protamine Sulphate': { units: ['mg'], routes: ['IV'] },
+                'Ranitidine': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Remifentanil': { units: ['mcg', 'mcg/kg/min'], routes: ['IV'] },
+                'Rocuronium (Esmron)': { units: ['mg', 'mcg/kg/min'], routes: ['IV'] },
+                'Ropivacaine': { units: ['mg'], routes: ['Epidural', 'Local Infiltration'] },
+                'Seretide (Fluticasone/Salmeterol)': { units: ['puff'], routes: ['Inhalation'] },
+                'Sodium Bicarbonate 8.4%, 4.2%': { units: ['mEq'], routes: ['IV'] },
+                'Succinylcholine': { units: ['mg'], routes: ['IV'] },
+                'Sugammadex': { units: ['mg'], routes: ['IV'] },
+                'Thiopental': { units: ['mg'], routes: ['IV'] },
+                'Tramadol': { units: ['mg'], routes: ['IV', 'IM'] },
+                'Tranexamic Acid (Kapron)': { units: ['mg', 'mg/min'], routes: ['IV'] },
+                'Triamcinolone (Kenacort)': { units: ['mg'], routes: ['IM', 'Intra-articular'] },
+                'Vancomycin': { units: ['mg', 'g'], routes: ['IV'] },
+                'Vasopressin': { units: ['units', 'units/min'], routes: ['IV'] },
+                'Salbutamol (Ventolin)': { units: ['puff', 'ml'], routes: ['Inhalation'] },
+                'Verapamil (Isoptin)': { units: ['mg', 'mcg/kg/min'], routes: ['IV'] }
+            };
+            const ivFluidList = [
+                '0.9% NS ( Normal Saline )',
+                '0.45% NS ( Half Normal Saline )',
+                '3% NS ( Hypertonic Saline )',
+                'RL ( Ringer Lactate )',
+                'Plasma-Lyte',
+                'D5W (Dextrose 5% in Water)',
+                'D10W (Dextrose 10% in Water)',
+                'D20W (Dextrose 20% in Water)',
+                'D25W (Dextrose 25% in Water)',
+                'D50W (Dextrose 50% in Water)',
+                'D5 NS (Dextrose 5% in NS)',
+                'D5 ½ NS (Dextrose 5% in ½ NS)',
+                'Plasma Protein 5%'
+            ];
+            const bolusTableBody = document.getElementById('bolus-table-body');
+            const infusionTableBody = document.getElementById('infusion-table-body');
+            const ivFluidsTableBody = document.getElementById('iv-fluids-table-body');
+            const vitalsTableBody = document.getElementById('vitals-table-body');
+            const bloodProductsTableBody = document.getElementById('blood-products-table-body');
+            const abgTableBody = document.getElementById('abg-table-body');
+            const anticoagulantTableBody = document.getElementById('anticoagulant-table-body');
+            const clearConfirmModal = document.getElementById('clear-confirm-modal');
+            const removeColConfirmModal = document.getElementById('remove-col-confirm-modal');
+            let vitalsChartInstance = null;
+            
+            // --- UI/UX FUNCTIONS ---
+
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const tabId = button.getAttribute('data-tab');
+                    tabPanes.forEach(pane => {
+                        pane.classList.toggle('hidden', pane.id !== tabId);
+                        pane.classList.toggle('active', pane.id !== tabId);
+                    });
+                });
+            });
+
+            const subTabButtons = document.querySelectorAll('.sub-tab-button');
+            const subTabContents = document.querySelectorAll('.sub-tab-content');
+            subTabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    subTabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const subTabId = button.dataset.subtab;
+                    subTabContents.forEach(content => {
+                        content.classList.toggle('hidden', content.id !== subTabId);
+                    });
+                    const addDrugRowBtn = document.getElementById('add-drug-row');
+                    if (subTabId === 'fluids') {
+                        addDrugRowBtn.classList.add('hidden');
+                    } else {
+                        addDrugRowBtn.classList.remove('hidden');
+                        addDrugRowBtn.textContent = subTabId === 'bolus' ? 'ADD' : 'Add Infusion';
+                    }
+                });
+            });
+
+            function highlightRow(element) {
+                const row = element.closest('tr');
+                if (row) {
+                    row.classList.remove('highlight');
+                    setTimeout(() => row.classList.add('highlight'), 10);
+                }
+            }
+
+            function switchToDisplayView(container) {
+                const timeDisplay = container.querySelector('.time-display-span');
+                const clockBtn = container.querySelector('.set-current-time-btn');
+                const timeInput = container.querySelector('.time-input-field');
+
+                if (timeInput.value) {
+                    timeDisplay.textContent = timeInput.value;
+                    timeDisplay.classList.add('has-value');
+                    highlightRow(container);
+                } else {
+                    timeDisplay.textContent = '--:--';
+                    timeDisplay.classList.remove('has-value');
+                }
+                
+                timeInput.classList.add('hidden');
+                timeDisplay.classList.remove('hidden');
+                clockBtn.classList.remove('hidden');
+            }
+
+            function switchToInputView(container) {
+                const timeDisplay = container.querySelector('.time-display-span');
+                const clockBtn = container.querySelector('.set-current-time-btn');
+                const timeInput = container.querySelector('.time-input-field');
+                
+                timeDisplay.classList.add('hidden');
+                clockBtn.classList.add('hidden');
+                timeInput.classList.remove('hidden');
+                timeInput.focus();
+                if (typeof timeInput.showPicker === 'function') {
+                    timeInput.showPicker();
+                }
+            }
+
+            function createTimeComponent(container) {
+                container.classList.add('custom-time-input-container', 'relative', 'flex', 'items-center', 'border', 'border-gray-300', 'rounded-md', 'bg-white', 'h-[31.5px]', 'px-1');
+                container.innerHTML = `
+                    <button type="button" class="set-current-time-btn p-1 text-gray-600 hover:text-blue-600" title="Set to Current Time">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>
+                    </button>
+                    <button type="button" class="time-display-span flex-grow text-center cursor-pointer text-gray-500">--:--</button>
+                    <input type="time" class="time-input-field hidden">
+                `;
+            }
+            
+            document.addEventListener('click', function(e) {
+                const clockBtn = e.target.closest('.set-current-time-btn');
+                if (clockBtn) {
+                    const container = clockBtn.closest('.custom-time-input-container');
+                    const timeInput = container.querySelector('.time-input-field');
+                    const now = new Date();
+                    timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    switchToDisplayView(container);
+                }
+                const timeDisplay = e.target.closest('.time-display-span');
+                if (timeDisplay) {
+                    switchToInputView(timeDisplay.closest('.custom-time-input-container'));
+                }
+            });
+            document.addEventListener('blur', (e) => { if (e.target.matches('.time-input-field')) switchToDisplayView(e.target.closest('.custom-time-input-container')); }, true);
+            document.addEventListener('keydown', (e) => { if (e.target.matches('.time-input-field') && e.key === 'Enter') e.target.blur(); });
+            document.querySelectorAll('.time-container').forEach(createTimeComponent);
+
+            // --- DYNAMIC ELEMENT CREATION ---
+            
+            function createInputCell(placeholder, type = 'text', tdClassName = '', ariaLabel = '') {
+                const cell = document.createElement('td');
+                if(tdClassName) cell.className = tdClassName;
+                const input = document.createElement('input');
+                input.type = type;
+                if(type === 'number') input.step = 'any';
+                input.placeholder = placeholder;
+                input.className = 'table-input';
+                input.setAttribute('aria-label', ariaLabel || placeholder);
+                cell.appendChild(input);
+                return cell;
+            }
+            
+            function createTimeInputCell() {
+                const cell = document.createElement('td');
+                const container = document.createElement('div');
+                createTimeComponent(container);
+                cell.appendChild(container);
+                return cell;
+            }
+
+            function createSelectCell(options, className = '') {
+                const cell = document.createElement('td');
+                const select = document.createElement('select');
+                select.className = `table-input ${className}`;
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    select.appendChild(option);
+                });
+                cell.appendChild(select);
+                return cell;
+            }
+
+            function createDeleteButtonCell(row) {
+                 const cell = document.createElement('td');
+                 cell.className = 'text-center';
+                 const button = document.createElement('button');
+                 button.innerHTML = '&times;';
+                 button.className = 'text-red-500 font-bold text-xl hover:text-red-700';
+                 button.setAttribute('aria-label', 'Delete row');
+                 button.title = "Delete Row";
+                 button.onclick = () => {
+                     row.remove();
+                     updateAllTotals(); 
+                 };
+                 cell.appendChild(button);
+                 return cell;
+            }
+
+            function createDuplicateButtonCell(row) {
+                const cell = document.createElement('td');
+                cell.className = 'text-center';
+                const button = document.createElement('button');
+                button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>`;
+                button.className = 'text-blue-500 hover:text-blue-700';
+                button.setAttribute('aria-label', 'Duplicate row');
+                button.title = "Duplicate Row";
+                button.onclick = () => {
+                    const currentRow = button.closest('tr');
+                    const nextRow = currentRow.nextElementSibling;
+                    const currentRowInputs = currentRow.querySelectorAll('select, input');
+
+                    const duplicateToRow = (targetRow) => {
+                        const targetRowInputs = targetRow.querySelectorAll('select, input');
+                        currentRowInputs.forEach((input, index) => {
+                            if (targetRowInputs[index]) {
+                                targetRowInputs[index].value = input.value;
+                                if (targetRowInputs[index].classList.contains('time-input-field')) {
+                                    switchToDisplayView(targetRowInputs[index].closest('.custom-time-input-container'));
+                                }
+                            }
+                        });
+                        updateAllTotals();
+                    };
+
+                    if (nextRow) {
+                        duplicateToRow(nextRow);
+                    } else {
+                        addIvFluidRow();
+                        const newLastRow = ivFluidsTableBody.lastElementChild;
+                        if(newLastRow) {
+                           duplicateToRow(newLastRow);
+                        }
+                    }
+                };
+                cell.appendChild(button);
+                return cell;
+            }
+            
+            function createSelectWithManualEntry(cell, options, placeholder, selectClass = '', inputClass = '', manualOptionPosition = 'top') {
+                cell.innerHTML = ''; 
+                const selectContainer = document.createElement('div');
+                const select = document.createElement('select');
+                select.className = `table-input ${selectClass}`;
+
+                if (manualOptionPosition === 'top') {
+                    select.innerHTML = `<option value="manual">&nbsp;</option>`;
+                }
+                options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
+                if (manualOptionPosition === 'bottom') {
+                    select.innerHTML += `<option value="manual">&nbsp;</option>`;
+                }
+                selectContainer.appendChild(select);
+
+                const manualContainer = document.createElement('div');
+                manualContainer.className = 'flex items-center space-x-2 hidden';
+                manualContainer.innerHTML = `
+                    <input type="text" placeholder="${placeholder}" class="table-input ${inputClass}">
+                    <button type="button" class="p-1 rounded-md hover:bg-gray-200 text-gray-600" aria-label="Back to ${placeholder} list" title="Back to List">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5z"/></svg>
+                    </button>`;
+                
+                cell.appendChild(selectContainer);
+                cell.appendChild(manualContainer);
+
+                select.addEventListener('change', () => {
+                    if (select.value === 'manual') {
+                        selectContainer.classList.add('hidden');
+                        manualContainer.classList.remove('hidden');
+                        manualContainer.querySelector('input').focus();
+                    }
+                });
+                manualContainer.querySelector('button').addEventListener('click', () => {
+                    manualContainer.classList.add('hidden');
+                    selectContainer.classList.remove('hidden');
+                    select.value = options.length > 0 ? options[0] : 'manual'; 
+                });
+                return select;
+            }
+
+            function updateDrugDependentCells(drugName, unitCell, routeCell, isInfusion = false) {
+                let units = drugData[drugName]?.units || [];
+                if (isInfusion) {
+                    units = units.filter(u => u.includes('/') || u.includes('hr') || u.includes('min'));
+                }
+                const unitSelect = createSelectWithManualEntry(unitCell, units, 'Unit', 'w-16', 'w-16', 'bottom');
+
+                if (isInfusion && drugName === 'Morphine' && units.includes('mg/kg/hr')) {
+                    unitSelect.value = 'mg/kg/hr';
+                }
+
+                if (routeCell) {
+                    let routes = drugData[drugName]?.routes || [];
+                    const routeSelect = createSelectWithManualEntry(routeCell, routes, 'Route', 'w-16', 'w-16', 'bottom');
+                    if(routes.includes('IV')) {
+                       routeSelect.value = 'IV';
+                    }
+                }
+            }
+            
+            // --- ROW CREATION FUNCTIONS ---
+
+            function addBolusRow() {
+                const newRow = bolusTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                
+                const drugCell = newRow.insertCell();
+                const routeCell = newRow.insertCell();
+                const unitCell = newRow.insertCell();
+
+                const drugSelect = createSelectWithManualEntry(drugCell, Object.keys(drugData).filter(k => k).sort(), 'Drug Name', 'w-48', '', 'top');
+                
+                drugSelect.addEventListener('change', (e) => {
+                    if(e.target.value !== 'manual') {
+                        updateDrugDependentCells(e.target.value, unitCell, routeCell, false);
+                    } else {
+                        routeCell.innerHTML = `<input type="text" placeholder="Route" class="table-input w-16">`;
+                        unitCell.innerHTML = `<input type="text" placeholder="Unit" class="table-input w-16">`;
+                    }
+                });
+                
+                updateDrugDependentCells('', unitCell, routeCell, false);
+
+                newRow.appendChild(createInputCell('Dose', 'number', 'w-16', '1st Dose'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('Dose', 'number', 'w-16', '2nd Dose'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('Dose', 'number', 'w-16', '3rd Dose'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('Dose', 'number', 'w-16', '4th Dose'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+
+            function addInfusionRow() {
+                const newRow = infusionTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                
+                const drugCell = newRow.insertCell();
+                const unitCell = newRow.insertCell();
+
+                const drugSelect = createSelectWithManualEntry(drugCell, Object.keys(drugData).filter(k => k).sort(), 'Drug Name', 'w-48', '', 'top');
+
+                drugSelect.addEventListener('change', (e) => {
+                     if(e.target.value !== 'manual') {
+                        updateDrugDependentCells(e.target.value, unitCell, null, true);
+                    } else {
+                        unitCell.innerHTML = `<input type="text" placeholder="Unit" class="table-input w-28">`;
+                    }
+                });
+                
+                updateDrugDependentCells('', unitCell, null, true);
+                
+                newRow.appendChild(createInputCell('Rate/Qty', 'text', '', '1st Rate or Quantity'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('Rate/Qty', 'text', '', '2nd Rate or Quantity'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+
+            function addIvFluidRow() {
+                const newRow = ivFluidsTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                newRow.appendChild(createSelectCell(['', ...ivFluidList], 'w-64'));
+                newRow.appendChild(createInputCell('ml', 'number', '', 'Volume (ml)'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createDuplicateButtonCell(newRow));
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+            
+            function addVitalRow() {
+                const newRow = vitalsTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+
+                // Create all cells first
+                const timeCell = createTimeInputCell();
+                const pulseCell = createInputCell('', 'number', '', 'Pulse');
+                const bpUpperCell = createInputCell('', 'number', '', 'SBP');
+                const bpLowerCell = createInputCell('', 'number', '', 'DBP');
+                const mapCell = createInputCell('', 'number', '', 'MAP');
+                const etco2Cell = createInputCell('', 'number', '', 'ETCO2');
+                const spo2Cell = createInputCell('', 'number', '', 'SpO2');
+                const tempCell = createInputCell('', 'number', 'temp-col', 'Temperature');
+                const sPAPCell = createInputCell('', 'number', 'pap-col', 'sPAP');
+                const dPAPCell = createInputCell('', 'number', 'pap-col', 'dPAP');
+                const mPAPCell = createInputCell('', 'number', 'pap-col', 'mPAP');
+                const cvpCell = createInputCell('', 'number', 'cvp-col', 'CVP');
+                const urineCell = createInputCell('', 'number', 'urine-col', 'Urine');
+                const deleteCell = createDeleteButtonCell(newRow);
+
+                // Time interval logic
+                const intervalValue = document.getElementById('vital-interval').value;
+                const existingRows = vitalsTableBody.querySelectorAll('tr');
+                if (intervalValue !== 'manual' && existingRows.length > 1) { // more than 1 because we just added one
+                    let lastTimeValue = null;
+                    for (let i = existingRows.length - 2; i >= 0; i--) { // Start from second to last
+                        const lastTimeInput = existingRows[i].querySelector('.time-input-field');
+                        if (lastTimeInput && lastTimeInput.value) {
+                            lastTimeValue = lastTimeInput.value;
+                            break;
+                        }
+                    }
+                    if (lastTimeValue) {
+                        const [hours, minutes] = lastTimeValue.split(':').map(Number);
+                        const newTime = new Date();
+                        newTime.setHours(hours, minutes, 0, 0);
+                        newTime.setMinutes(newTime.getMinutes() + parseInt(intervalValue, 10));
+                        const newTimeString = `${String(newTime.getHours()).padStart(2, '0')}:${String(newTime.getMinutes()).padStart(2, '0')}`;
+                        timeCell.querySelector('.time-input-field').value = newTimeString;
+                        switchToDisplayView(timeCell.querySelector('.custom-time-input-container'));
+                    }
+                }
+
+                // Append cells in the new order
+                newRow.appendChild(timeCell);
+                newRow.appendChild(pulseCell);
+                newRow.appendChild(bpUpperCell);
+                newRow.appendChild(bpLowerCell);
+                newRow.appendChild(mapCell);
+                newRow.appendChild(etco2Cell);
+                newRow.appendChild(spo2Cell);
+
+                // Append optional cells and manage visibility
+                newRow.appendChild(tempCell);
+                if (document.querySelector('#vitals th.temp-col').classList.contains('hidden')) {
+                    tempCell.classList.add('hidden');
+                }
+                
+                newRow.appendChild(sPAPCell);
+                newRow.appendChild(dPAPCell);
+                newRow.appendChild(mPAPCell);
+                if (document.querySelector('#vitals th.pap-col').classList.contains('hidden')) {
+                    sPAPCell.classList.add('hidden');
+                    dPAPCell.classList.add('hidden');
+                    mPAPCell.classList.add('hidden');
+                }
+
+                newRow.appendChild(cvpCell);
+                if (document.querySelector('#vitals th.cvp-col').classList.contains('hidden')) {
+                    cvpCell.classList.add('hidden');
+                }
+                
+                newRow.appendChild(urineCell);
+                if (document.querySelector('#vitals th.urine-col').classList.contains('hidden')) {
+                    urineCell.classList.add('hidden');
+                }
+                
+                newRow.appendChild(deleteCell);
+
+                // MAP calculation logic
+                const calculateMap = () => {
+                    const upperInput = bpUpperCell.querySelector('input');
+                    const lowerInput = bpLowerCell.querySelector('input');
+                    const mapInput = mapCell.querySelector('input');
+
+                    const upper = parseFloat(upperInput.value);
+                    const lower = parseFloat(lowerInput.value);
+
+                    if (upperInput.value.trim() !== '' && lowerInput.value.trim() !== '' && !isNaN(upper) && !isNaN(lower)) {
+                        mapInput.value = (upper >= lower) ? Math.round(lower + (upper - lower) / 3) : '';
+                        mapInput.readOnly = true;
+                        mapInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+                    } else {
+                        mapInput.readOnly = false;
+                        mapInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    }
+                };
+                bpUpperCell.querySelector('input').addEventListener('input', calculateMap);
+                bpLowerCell.querySelector('input').addEventListener('input', calculateMap);
+            }
+
+            function addBloodProductRow() {
+                const newRow = bloodProductsTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                newRow.appendChild(createSelectCell(['', 'Packed Red Blood Cells (PRBC)', 'Fresh Frozen Plasma (FFP)', 'Platelets', 'Cryoprecipitate'], 'w-48'));
+                newRow.appendChild(createInputCell('Unit #', 'text', '', 'Unit Number'));
+                const unitsCell = newRow.appendChild(createInputCell('1', 'number', 'w-24', 'Number of Units'));
+                unitsCell.querySelector('input').value = '1';
+                newRow.appendChild(createInputCell('Volume', 'number', 'w-24', 'Volume (ml)'));
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('Notes', 'text', '', 'Notes or Reactions'));
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+
+            function addAbgRow() {
+                const newRow = abgTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                newRow.appendChild(createTimeInputCell());
+                newRow.appendChild(createInputCell('', 'number', '', 'pH'));
+                newRow.appendChild(createInputCell('', 'number', '', 'PaO2'));
+                newRow.appendChild(createInputCell('', 'number', '', 'PaCO2'));
+                newRow.appendChild(createInputCell('', 'number', '', 'HCO3'));
+                newRow.appendChild(createInputCell('', 'number', '', 'Base excess'));
+                newRow.appendChild(createInputCell('', 'number', '', 'Hb'));
+                newRow.appendChild(createInputCell('', 'number', '', 'Serum K+'));
+                newRow.appendChild(createInputCell('', 'number', '', 'Lactate'));
+                newRow.appendChild(createInputCell('', 'number', '', 'Blood Sugar'));
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+            
+            function addAnticoagulantRow() {
+                const newRow = anticoagulantTableBody.insertRow();
+                newRow.className = 'bg-white border-b';
+                newRow.appendChild(createInputCell('Dose', 'text', 'border-r', 'Heparin Dose'));
+                newRow.appendChild(createTimeInputCell()).classList.add('border-r');
+                newRow.appendChild(createInputCell('ACT', 'text', 'border-r', 'Heparin ACT'));
+                newRow.appendChild(createInputCell('Dose', 'text', 'border-r', 'Protamine Dose'));
+                newRow.appendChild(createTimeInputCell()).classList.add('border-r');
+                newRow.appendChild(createInputCell('ACT', 'text', '', 'Protamine ACT'));
+                newRow.appendChild(createDeleteButtonCell(newRow));
+            }
+
+            function addLine(container, label) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center gap-2 mb-2';
+                wrapper.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-4 flex-grow">
+                        <label class="font-semibold text-gray-800">${label}:</label>
+                        <input type="text" placeholder="Size" class="table-input" aria-label="${label} Size">
+                        <input type="text" placeholder="Site" class="table-input col-span-2" aria-label="${label} Site">
+                    </div>
+                    <button class="text-red-500 font-bold text-xl hover:text-red-700 w-8" aria-label="Delete ${label} line" title="Delete Line">&times;</button>
+                `;
+                wrapper.querySelector('button').onclick = () => wrapper.remove();
+                container.appendChild(wrapper);
+            }
+            
+            function addIcuInfusionRow() {
+                const tableBody = document.getElementById('icu-infusions-table-body');
+                const newRow = tableBody.insertRow();
+                newRow.innerHTML = `
+                    <td><input type="text" placeholder="Drug Name" class="table-input"></td>
+                    <td><input type="text" placeholder="e.g., 10" class="table-input"></td>
+                    <td><input type="text" placeholder="e.g., mcg/kg/min" class="table-input"></td>
+                    <td class="text-center">
+                        <button class="text-red-500 font-bold text-xl hover:text-red-700" aria-label="Delete Infusion" title="Delete Infusion">&times;</button>
+                    </td>
+                `;
+                newRow.querySelector('button').onclick = () => newRow.remove();
+            }
+            
+            // --- LOGIC FUNCTIONS (Totals, Save/Load, Charting) ---
+
+            function updateAllTotals() {
+                 updateDrugTotals();
+                 updateFluidTotals();
+                 updateBloodTotals();
+                 updateUrineTotal();
+                 if (!document.getElementById('vitals-chart-container').classList.contains('hidden')) {
+                    updateVitalsChart();
+                 }
+            }
+
+            function updateDrugTotals() {
+                const totals = {};
+                // Bolus calculation
+                document.querySelectorAll('#bolus-table-body tr').forEach(row => {
+                    const drugEl = row.cells[0].querySelector('select, input');
+                    const unitEl = row.cells[2].querySelector('select, input');
+                    if (!drugEl || !unitEl || !drugEl.value || !unitEl.value) return;
+                    
+                    const drugName = drugEl.value;
+                    const unit = unitEl.value;
+                    const key = `${drugName} (${unit})`;
+                    if (!totals[key]) totals[key] = 0;
+                    
+                    row.querySelectorAll('input[type="number"]').forEach(qtyInput => {
+                       totals[key] += parseFloat(qtyInput.value) || 0;
+                    });
+                });
+                
+                // Infusion calculation
+                document.querySelectorAll('#infusion-table-body tr').forEach(row => {
+                    const drugEl = row.cells[0].querySelector('select, input');
+                    const unitEl = row.cells[1].querySelector('select, input');
+                    const infusionWeightInput = document.getElementById('infusion-weight');
+                    const patientWeightInput = document.getElementById('patient-weight');
+
+
+                    if (!drugEl || !unitEl || !drugEl.value || !unitEl.value) return;
+                    const drugName = drugEl.value;
+                    const unit = unitEl.value;
+                    const key = `${drugName} (${unit.replace('/kg','')})`; // Normalise the key
+                    if (!totals[key]) totals[key] = 0;
+
+                    const calculateTotal = (rateEl, startTimeEl, endTimeEl) => {
+                        const rateValue = rateEl.value;
+                        const rate = parseFloat(rateValue);
+                        const startTime = startTimeEl.value;
+                        const endTime = endTimeEl.value;
+                        
+                        // If it's a rate (e.g., mcg/h, mg/kg/h)
+                        if (!isNaN(rate) && startTime && endTime && (unit.includes('/h') || unit.includes('/min'))) {
+                            const start = new Date(`1970-01-01T${startTime}:00`);
+                            const end = new Date(`1970-01-01T${endTime}:00`);
+                            
+                            let duration = (end - start) / (1000 * 60); // duration in minutes
+                            if (duration < 0) { // Handles overnight case
+                                duration += 24 * 60;
+                            }
+                            
+                            let totalAmount = 0;
+                            if (unit.includes('/h')) {
+                                totalAmount = rate * (duration / 60);
+                            } else if (unit.includes('/min')) {
+                                totalAmount = rate * duration;
+                            }
+
+                            if (unit.includes('/kg')) {
+                                const weight = parseFloat(infusionWeightInput.value) || parseFloat(patientWeightInput.value) || 0;
+                                if (weight > 0) {
+                                    totalAmount *= weight;
+                                } else {
+                                    totalAmount = 0; // Cannot calculate without weight
+                                }
+                            }
+                            
+                            totals[key] += totalAmount;
+                        } 
+                        // If it's a fixed quantity (e.g., just a number without a rate unit)
+                        else if (!isNaN(rate) && !unit.includes('/')) {
+                             totals[key] += rate;
+                        }
+                    };
+
+                    // Calculate for both infusion segments in the row
+                    calculateTotal(row.cells[2].querySelector('input'), row.cells[3].querySelector('.time-input-field'), row.cells[4].querySelector('.time-input-field'));
+                    calculateTotal(row.cells[5].querySelector('input'), row.cells[6].querySelector('.time-input-field'), row.cells[7].querySelector('.time-input-field'));
+                });
+
+
+                const listEl = document.getElementById('drug-totals-list');
+                listEl.innerHTML = '';
+                if(Object.keys(totals).length === 0 || Object.values(totals).every(v => v === 0)) {
+                    listEl.innerHTML = '<p class="text-gray-500">No drug totals to display.</p>';
+                } else {
+                    for(const [key, value] of Object.entries(totals)) {
+                        if (value > 0) {
+                            const p = document.createElement('p');
+                            p.innerHTML = `<span class="font-semibold text-gray-700">${key}:</span> <span class="text-blue-600">${value.toFixed(2).replace(/\.00$/, '')}</span>`;
+                            listEl.appendChild(p);
+                        }
+                    }
+                }
+            }
+
+            function updateFluidTotals() {
+                let total = 0;
+                const fluidTotals = {};
+                const breakdownList = document.getElementById('fluid-breakdown-list');
+
+                document.querySelectorAll('#iv-fluids-table-body tr').forEach(row => {
+                    const fluidSelect = row.cells[0].querySelector('select');
+                    const volInput = row.cells[1].querySelector('input');
+                    const volume = parseFloat(volInput.value) || 0;
+
+                    if (fluidSelect && fluidSelect.value && volume > 0) {
+                        const fluidName = fluidSelect.value.split('(')[0].trim(); // Get the name before parenthesis
+                        total += volume;
+                        if (!fluidTotals[fluidName]) {
+                            fluidTotals[fluidName] = 0;
+                        }
+                        fluidTotals[fluidName] += volume;
+                    }
+                });
+
+                document.getElementById('total-fluid-volume').textContent = `${total} ml`;
+
+                // Update breakdown list
+                breakdownList.innerHTML = '';
+                for (const [name, volume] of Object.entries(fluidTotals)) {
+                    if (volume > 0) {
+                        const p = document.createElement('p');
+                        p.textContent = `${name}: ${volume} ml`;
+                        breakdownList.appendChild(p);
+                    }
+                }
+            }
+
+            function updateBloodTotals() {
+                let totalVolume = 0;
+                let totalUnits = 0;
+                const bloodTotals = {}; // Will store { volume: X, units: Y }
+                const breakdownList = document.getElementById('blood-breakdown-list');
+
+                document.querySelectorAll('#blood-products-table-body tr').forEach(row => {
+                    const productSelect = row.cells[0].querySelector('select');
+                    const unitsInput = row.cells[2].querySelector('input');
+                    const volInput = row.cells[3].querySelector('input');
+                    const volume = parseFloat(volInput.value) || 0;
+                    const unitsCount = parseFloat(unitsInput.value) || 0;
+
+                    // A row is only counted as a unit if a product is selected.
+                    if (productSelect && productSelect.value) {
+                        const productName = productSelect.value;
+                        totalVolume += volume;
+                        totalUnits += unitsCount;
+
+                        if (!bloodTotals[productName]) {
+                            bloodTotals[productName] = { volume: 0, units: 0 };
+                        }
+                        bloodTotals[productName].volume += volume;
+                        bloodTotals[productName].units += unitsCount;
+                    }
+                });
+
+                document.getElementById('total-blood-volume').textContent = `${totalVolume} ml`;
+                document.getElementById('total-blood-units').textContent = `${totalUnits} units`;
+
+
+                // Update breakdown list
+                breakdownList.innerHTML = '';
+                for (const [name, data] of Object.entries(bloodTotals)) {
+                    if (data.units > 0) {
+                        const p = document.createElement('p');
+                        p.textContent = `${name}: ${data.units} unit(s) / ${data.volume} ml`;
+                        breakdownList.appendChild(p);
+                    }
+                }
+            }
+
+            function updateUrineTotal() {
+                 let total = 0;
+                 if (document.querySelector('#vitals th.urine-col').classList.contains('hidden')) return;
+                 document.querySelectorAll('#vitals-table-body .urine-col input').forEach(urineInput => {
+                    if(urineInput) total += parseFloat(urineInput.value) || 0;
+                });
+                document.getElementById('total-urine-output').textContent = `${total} ml`;
+            }
+            
+            function initializeVitalsChart() {
+                const ctx = document.getElementById('vitalsChart').getContext('2d');
+                vitalsChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: 'BP Systolic', data: [], borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.5)', yAxisID: 'y', fill: false, tension: 0.1, pointStyle: 'triangle', radius: 5 },
+                            { label: 'BP Diastolic', data: [], borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.2)', yAxisID: 'y', fill: '-1', tension: 0.1, pointStyle: 'triangle', radius: 5, borderDash: [5, 5] },
+                            { label: 'MAP', data: [], borderColor: 'rgb(255, 159, 64)', backgroundColor: 'rgba(255, 159, 64, 0.5)', yAxisID: 'y', pointStyle: 'rect', radius: 5 },
+                            { label: 'Pulse', data: [], borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.5)', yAxisID: 'y1', pointStyle: 'circle', radius: 5 },
+                            { label: 'SpO2', data: [], borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.5)', yAxisID: 'y1', pointStyle: 'crossRot', radius: 5 },
+                            { label: 'ETCO2', data: [], borderColor: 'rgb(153, 102, 255)', backgroundColor: 'rgba(153, 102, 255, 0.5)', yAxisID: 'y2', pointStyle: 'star', radius: 5 },
+                            { label: 'Temp', data: [], borderColor: 'rgb(255, 205, 86)', backgroundColor: 'rgba(255, 205, 86, 0.5)', yAxisID: 'y2', hidden: true },
+                            { label: 'CVP', data: [], borderColor: 'rgb(201, 203, 207)', backgroundColor: 'rgba(201, 203, 207, 0.5)', yAxisID: 'y2', hidden: true }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            title: { display: true, text: 'Vital Signs Over Time', font: { size: 16 } },
+                             tooltip: {
+                                filter: function(tooltipItem) {
+                                    return tooltipItem.datasetIndex !== 1;
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label.includes('Systolic')) {
+                                           const systolic = context.chart.data.datasets[0].data[context.dataIndex];
+                                           const diastolic = context.chart.data.datasets[1].data[context.dataIndex];
+                                           if(systolic !== null && diastolic !== null) {
+                                               return `BP: ${systolic} / ${diastolic}`;
+                                           }
+                                        }
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) { label += context.parsed.y; }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Time' } },
+                            y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'BP / MAP (mmHg)' }, suggestedMin: 40, suggestedMax: 180 },
+                            y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Pulse / SpO2' }, grid: { drawOnChartArea: false }, suggestedMin: 40, suggestedMax: 120 },
+                            y2: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'ETCO2/Temp/CVP' }, grid: { drawOnChartArea: false }, suggestedMin: 0, suggestedMax: 50 }
+                        }
+                    }
+                });
+            }
+            
+            function updateVitalsChart() {
+                if (!vitalsChartInstance) return;
+
+                const data = {
+                    labels: [],
+                    datasets: { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[], 7:[] } 
+                };
+                
+                // Hard-coded mapping based on the order of cells added in addVitalRow
+                // This is more robust than parsing the multi-row table header
+                const colMap = {
+                    time: 0,
+                    pulse: 1,
+                    bpUpper: 2, // SBP
+                    bpLower: 3, // DBP
+                    map: 4,
+                    etco2: 5,
+                    spo2: 6,
+                    temp: 7,
+                    cvp: 11
+                };
+
+                document.querySelectorAll('#vitals-table-body tr').forEach(row => {
+                    const timeInput = row.cells[colMap.time]?.querySelector('.time-input-field');
+                    if (timeInput && timeInput.value) {
+                        data.labels.push(timeInput.value);
+                        
+                        const getValue = (colIndex) => {
+                            if (colIndex === undefined) return null;
+                            const input = row.cells[colIndex]?.querySelector('input');
+                            return input && input.value ? parseFloat(input.value) : null;
+                        };
+
+                        data.datasets[0].push(getValue(colMap.bpUpper));
+                        data.datasets[1].push(getValue(colMap.bpLower));
+                        data.datasets[2].push(getValue(colMap.map));
+                        data.datasets[3].push(getValue(colMap.pulse));
+                        data.datasets[4].push(getValue(colMap.spo2));
+                        data.datasets[5].push(getValue(colMap.etco2));
+                        data.datasets[6].push(getValue(colMap.temp));
+                        data.datasets[7].push(getValue(colMap.cvp));
+                    }
+                });
+
+                vitalsChartInstance.data.labels = data.labels;
+                for(let i=0; i < vitalsChartInstance.data.datasets.length; i++) {
+                    vitalsChartInstance.data.datasets[i].data = data.datasets[i];
+                }
+                
+                document.querySelectorAll('.chart-control').forEach(checkbox => {
+                    const datasetIndex = parseInt(checkbox.dataset.datasetIndex);
+                    vitalsChartInstance.setDatasetVisibility(datasetIndex, checkbox.checked);
+                    if (datasetIndex === 0) {
+                        vitalsChartInstance.setDatasetVisibility(1, checkbox.checked);
+                    }
+                });
+                
+                const isTempVisible = !document.querySelector('#vitals th.temp-col').classList.contains('hidden');
+                const isCvpVisible = !document.querySelector('#vitals th.cvp-col').classList.contains('hidden');
+                document.querySelector('.chart-control-temp').classList.toggle('hidden', !isTempVisible);
+                document.querySelector('.chart-control-cvp').classList.toggle('hidden', !isCvpVisible);
+
+                if (!isTempVisible) vitalsChartInstance.setDatasetVisibility(6, false);
+                if (!isCvpVisible) vitalsChartInstance.setDatasetVisibility(7, false);
+
+                vitalsChartInstance.update();
+            }
+
+            function addEventListenersForTotals() {
+                const debouncedUpdate = (func, delay) => {
+                    let timeout;
+                    return (...args) => {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => func.apply(this, args), delay);
+                    };
+                };
+                
+                const fastUpdate = debouncedUpdate(updateAllTotals, 300);
+                document.getElementById('drugs').addEventListener('input', fastUpdate);
+                document.getElementById('blood_products').addEventListener('input', fastUpdate);
+                document.getElementById('vitals').addEventListener('input', fastUpdate);
+            }
+            
+            function serializeTable(tbodyId) {
+                return Array.from(document.getElementById(tbodyId).rows).map(row => 
+                    Array.from(row.querySelectorAll('select, input, textarea')).map(input =>
+                        (input.type === 'checkbox' || input.type === 'radio') ? input.checked : input.value
+                    )
+                );
+            }
+
+            function saveForm() {
+                 const formData = {
+                    staticFields: {},
+                    tables: {
+                        bolus: serializeTable('bolus-table-body'),
+                        infusion: serializeTable('infusion-table-body'),
+                        fluids: serializeTable('iv-fluids-table-body'),
+                        bloodProducts: serializeTable('blood-products-table-body'),
+                        vitals: serializeTable('vitals-table-body'),
+                        abg: serializeTable('abg-table-body'),
+                        anticoagulant: serializeTable('anticoagulant-table-body'),
+                        icuHandover: serializeTable('icu-infusions-table-body')
+                    },
+                    vitalsVisibility: {
+                        temp: !document.querySelector('#vitals th.temp-col').classList.contains('hidden'),
+                        cvp: !document.querySelector('#vitals th.cvp-col').classList.contains('hidden'),
+                        urine: !document.querySelector('#vitals th.urine-col').classList.contains('hidden'),
+                        pap: !document.querySelector('#vitals th.pap-col').classList.contains('hidden')
+                    },
+                    sectionsVisibility: {
+                        blood_products: !document.getElementById('blood_products-tab-btn').classList.contains('hidden'),
+                        abg: !document.getElementById('abg-tab-btn').classList.contains('hidden'),
+                        anticoagulant: !document.getElementById('anticoagulant-tab-btn').classList.contains('hidden'),
+                        interventions: !document.getElementById('interventions-tab-btn').classList.contains('hidden'),
+                        icu_handover: !document.getElementById('icu_handover-tab-btn').classList.contains('hidden'),
+                    },
+                    timingSectionsVisibility: {
+                        cpb: !document.getElementById('cpb-section').classList.contains('hidden'),
+                        aorticClamp: !document.getElementById('aortic-clamp-section').classList.contains('hidden'),
+                        circulatoryArrest: !document.getElementById('circulatory-arrest-section').classList.contains('hidden'),
+                        tourniquet: !document.getElementById('tourniquet-section').classList.contains('hidden'),
+                        throatPack: !document.getElementById('throat-pack-section').classList.contains('hidden'),
+                    }
+                };
+                document.querySelectorAll('input, textarea, select').forEach(el => {
+                    if (el.id && !el.closest('tbody')) {
+                         if (el.type === 'checkbox' || el.type === 'radio') {
+                             formData.staticFields[el.id] = el.checked;
+                         } else {
+                            formData.staticFields[el.id] = el.value;
+                         }
+                    }
+                });
+                localStorage.setItem('anesthesiaRecord', JSON.stringify(formData));
+                alert('Form data saved!');
+            }
+
+            function loadForm() {
+                const savedData = localStorage.getItem('anesthesiaRecord');
+                if (!savedData) {
+                    alert('No saved data found.'); return;
+                }
+                const formData = JSON.parse(savedData);
+                ['bolus-table-body', 'infusion-table-body', 'iv-fluids-table-body', 'blood-products-table-body', 'vitals-table-body', 'abg-table-body', 'anticoagulant-table-body', 'icu-infusions-table-body'].forEach(id => {
+                    document.getElementById(id).innerHTML = '';
+                });
+
+                if (formData.staticFields) {
+                    for (const id in formData.staticFields) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            if (el.type === 'checkbox' || el.type === 'radio') {
+                                el.checked = formData.staticFields[id];
+                            } else {
+                                el.value = formData.staticFields[id];
+                            }
+                            if (el.id.includes('checkbox')) { // Trigger change for modal details
+                                el.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    }
+                }
+                
+                if(formData.vitalsVisibility) {
+                    if(formData.vitalsVisibility.temp) document.getElementById('add-temp-column-btn').click();
+                    if(formData.vitalsVisibility.cvp) document.getElementById('add-cvp-column-btn').click();
+                    if(formData.vitalsVisibility.urine) document.getElementById('add-urine-column-btn').click();
+                    if(formData.vitalsVisibility.pap) document.getElementById('add-pap-column-btn').click();
+                }
+
+                 if(formData.sectionsVisibility) {
+                    if(formData.sectionsVisibility.blood_products) document.getElementById('add-blood_products-section-btn').click();
+                    if(formData.sectionsVisibility.abg) document.getElementById('add-abg-section-btn').click();
+                    if(formData.sectionsVisibility.anticoagulant) document.getElementById('add-anticoagulant-section-btn').click();
+                    if(formData.sectionsVisibility.interventions) document.getElementById('add-interventions-section-btn').click();
+                    if(formData.sectionsVisibility.icu_handover) document.getElementById('add-icu_handover-section-btn').click();
+                }
+
+                if (formData.timingSectionsVisibility) {
+                    if(formData.timingSectionsVisibility.cpb) document.getElementById('add-cpb-btn').click();
+                    if(formData.timingSectionsVisibility.aorticClamp) document.getElementById('add-aortic-clamp-btn').click();
+                    if(formData.timingSectionsVisibility.circulatoryArrest) document.getElementById('add-circulatory-arrest-btn').click();
+                    if(formData.timingSectionsVisibility.tourniquet) document.getElementById('add-tourniquet-btn').click();
+                    if(formData.timingSectionsVisibility.throatPack) document.getElementById('add-throat-pack-btn').click();
+                }
+
+                const populateTable = (tbodyId, rowData, addRowFunc) => {
+                    if (!rowData || !document.getElementById(tbodyId)) return;
+                    rowData.forEach(data => {
+                        addRowFunc();
+                        const newRow = document.getElementById(tbodyId).lastElementChild;
+                        if (!newRow) return;
+                        const inputs = newRow.querySelectorAll('select, input, textarea');
+                        inputs.forEach((input, index) => {
+                            if (data[index] === undefined || data[index] === null) return;
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.checked = data[index];
+                            } else {
+                                input.value = data[index];
+                            }
+                            if(input.classList.contains('time-input-field') && input.value) {
+                                switchToDisplayView(input.closest('.custom-time-input-container'));
+                             }
+                        });
+                    });
+                };
+                
+                if (formData.tables) {
+                    populateTable('bolus-table-body', formData.tables.bolus, addBolusRow);
+                    populateTable('infusion-table-body', formData.tables.infusion, addInfusionRow);
+                    populateTable('iv-fluids-table-body', formData.tables.fluids, addIvFluidRow);
+                    populateTable('blood-products-table-body', formData.tables.bloodProducts, addBloodProductRow);
+                    populateTable('vitals-table-body', formData.tables.vitals, addVitalRow);
+                    populateTable('abg-table-body', formData.tables.abg, addAbgRow);
+                    populateTable('anticoagulant-table-body', formData.tables.anticoagulant, addAnticoagulantRow);
+                    populateTable('icu-infusions-table-body', formData.tables.icuHandover, addIcuInfusionRow);
+                }
+                updateAllTotals();
+                alert('Form data loaded!');
+            }
+            
+            // --- INITIALIZATION ---
+            
+            document.getElementById('save-form-btn').addEventListener('click', saveForm);
+            document.getElementById('load-form-btn').addEventListener('click', loadForm);
+            document.getElementById('clear-form-btn').addEventListener('click', () => { clearConfirmModal.classList.remove('hidden'); clearConfirmModal.classList.add('flex'); });
+            document.getElementById('cancel-clear-btn').addEventListener('click', () => { clearConfirmModal.classList.add('hidden'); clearConfirmModal.classList.remove('flex'); });
+            document.getElementById('confirm-clear-btn').addEventListener('click', () => { localStorage.removeItem('anesthesiaRecord'); location.reload(); });
+            
+            document.getElementById('add-drug-row').addEventListener('click', () => {
+                const activeSubTab = document.querySelector('.sub-tab-button.active').dataset.subtab;
+                for (let i = 0; i < 3; i++) {
+                    if (activeSubTab === 'bolus') addBolusRow();
+                    else if (activeSubTab === 'infusion') addInfusionRow();
+                }
+            });
+            document.getElementById('add-iv-fluid-row').addEventListener('click', () => { for (let i = 0; i < 3; i++) addIvFluidRow(); });
+            document.getElementById('add-vital-row').addEventListener('click', () => { for (let i = 0; i < 7; i++) addVitalRow(); });
+            document.getElementById('add-blood-product-row').addEventListener('click', () => { for (let i = 0; i < 3; i++) addBloodProductRow(); });
+            document.getElementById('add-abg-row').addEventListener('click', addAbgRow);
+            document.getElementById('add-anticoagulant-row').addEventListener('click', addAnticoagulantRow);
+            document.getElementById('add-iv-line').addEventListener('click', () => addLine(document.getElementById('iv-lines-container'), 'IV'));
+            document.getElementById('add-art-line').addEventListener('click', () => addLine(document.getElementById('art-lines-container'), 'Art'));
+            document.getElementById('add-cvp-line').addEventListener('click', () => addLine(document.getElementById('cvp-lines-container'), 'CVP'));
+            document.getElementById('add-icu-infusion-row').addEventListener('click', addIcuInfusionRow);
+
+            const setupColumnToggle = (addBtnId, removeBtnId, colClass, totalClass = null) => {
+                const addBtn = document.getElementById(addBtnId);
+                const removeBtn = document.getElementById(removeBtnId);
+                
+                addBtn.addEventListener('click', () => {
+                    document.querySelectorAll(colClass).forEach(c => c.classList.remove('hidden'));
+                    if (totalClass) document.querySelectorAll(totalClass).forEach(el => el.classList.remove('hidden'));
+                    addBtn.classList.add('hidden');
+                    removeBtn.classList.remove('hidden');
+                    updateVitalsChart();
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    let hasValue = false;
+                    document.querySelectorAll(`#vitals-table-body ${colClass} input`).forEach(input => {
+                        if (input.value) hasValue = true;
+                    });
+
+                    const hideColumn = () => {
+                        document.querySelectorAll(colClass).forEach(c => c.classList.add('hidden'));
+                        if (totalClass) document.querySelectorAll(totalClass).forEach(el => el.classList.add('hidden'));
+                        addBtn.classList.remove('hidden');
+                        removeBtn.classList.add('hidden');
+                        updateVitalsChart();
+                    };
+
+                    if (hasValue) {
+                        removeColConfirmModal.classList.remove('hidden');
+                        removeColConfirmModal.classList.add('flex');
+                        
+                        const confirmHandler = () => {
+                            hideColumn();
+                            removeColConfirmModal.classList.add('hidden');
+                            removeColConfirmModal.classList.remove('flex');
+                            document.getElementById('confirm-remove-col-btn').removeEventListener('click', confirmHandler);
+                        };
+                        const cancelHandler = () => {
+                            removeColConfirmModal.classList.add('hidden');
+                            removeColConfirmModal.classList.remove('flex');
+                             document.getElementById('cancel-remove-col-btn').removeEventListener('click', cancelHandler);
+                        };
+
+                        document.getElementById('confirm-remove-col-btn').addEventListener('click', confirmHandler, { once: true });
+                        document.getElementById('cancel-remove-col-btn').addEventListener('click', cancelHandler, { once: true });
+
+                    } else {
+                        hideColumn();
+                    }
+                });
+            };
+            setupColumnToggle('add-temp-column-btn', 'remove-temp-column-btn', '.temp-col');
+            setupColumnToggle('add-cvp-column-btn', 'remove-cvp-column-btn', '.cvp-col');
+            setupColumnToggle('add-urine-column-btn', 'remove-urine-column-btn', '.urine-col', '.urine-total');
+            setupColumnToggle('add-pap-column-btn', 'remove-pap-column-btn', '.pap-col');
+            
+            const setupSectionToggle = (addBtnId, removeBtnId, tabBtnId, sectionId) => {
+                const addBtn = document.getElementById(addBtnId);
+                const removeBtn = document.getElementById(removeBtnId);
+                const tabBtn = document.getElementById(tabBtnId);
+
+                addBtn.addEventListener('click', () => {
+                    tabBtn.classList.remove('hidden');
+                    addBtn.classList.add('hidden');
+                    removeBtn.classList.remove('hidden');
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    const sectionPane = document.getElementById(sectionId);
+                    const hasValue = Array.from(sectionPane.querySelectorAll('input, select, textarea')).some(el => {
+                        if (el.type === 'checkbox' || el.type === 'radio') return el.checked;
+                        if (el.tagName === 'SELECT') return el.value && el.selectedIndex > 0;
+                        return el.value;
+                    });
+
+                    const hideSection = () => {
+                        if (tabBtn.classList.contains('active')) {
+                            document.querySelector('.tab-button[data-tab="vitals"]').click();
+                        }
+                        tabBtn.classList.add('hidden');
+                        addBtn.classList.remove('hidden');
+                        removeBtn.classList.add('hidden');
+                    };
+
+                    if (hasValue) {
+                         removeColConfirmModal.querySelector('p').textContent = `This section contains data. Are you sure you want to remove it? This action cannot be undone.`
+                         removeColConfirmModal.classList.remove('hidden');
+                         removeColConfirmModal.classList.add('flex');
+                         
+                         const confirmHandler = () => {
+                            Array.from(sectionPane.querySelectorAll('input, textarea')).forEach(el => {
+                                if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+                                else el.value = '';
+                            });
+                             Array.from(sectionPane.querySelectorAll('select')).forEach(el => el.selectedIndex = 0);
+                            hideSection();
+                            removeColConfirmModal.classList.add('hidden');
+                            removeColConfirmModal.classList.remove('flex');
+                         };
+                         const cancelHandler = () => {
+                            removeColConfirmModal.classList.add('hidden');
+                            removeColConfirmModal.classList.remove('flex');
+                         };
+
+                        document.getElementById('confirm-remove-col-btn').addEventListener('click', confirmHandler, { once: true });
+                        document.getElementById('cancel-remove-col-btn').addEventListener('click', cancelHandler, { once: true });
+                    } else {
+                        hideSection();
+                    }
+                });
+            };
+            setupSectionToggle('add-blood_products-section-btn', 'remove-blood_products-section-btn', 'blood_products-tab-btn', 'blood_products');
+            setupSectionToggle('add-abg-section-btn', 'remove-abg-section-btn', 'abg-tab-btn', 'abg');
+            setupSectionToggle('add-anticoagulant-section-btn', 'remove-anticoagulant-section-btn', 'anticoagulant-tab-btn', 'anticoagulant');
+            setupSectionToggle('add-interventions-section-btn', 'remove-interventions-section-btn', 'interventions-tab-btn', 'interventions');
+            setupSectionToggle('add-icu_handover-section-btn', 'remove-icu_handover-section-btn', 'icu_handover-tab-btn', 'icu_handover');
+
+            const setupTimingSectionToggle = (addBtnId, removeBtnId, sectionId) => {
+                const addBtn = document.getElementById(addBtnId);
+                const removeBtn = document.getElementById(removeBtnId);
+                const section = document.getElementById(sectionId);
+
+                addBtn.addEventListener('click', () => {
+                    section.classList.remove('hidden');
+                    addBtn.classList.add('hidden');
+                    removeBtn.classList.remove('hidden');
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    section.classList.add('hidden');
+                    addBtn.classList.remove('hidden');
+                    removeBtn.classList.add('hidden');
+
+                    // Clear inputs within the section
+                    section.querySelectorAll('input[type="text"], input[type="time"]').forEach(input => {
+                        input.value = '';
+                    });
+                    section.querySelectorAll('.custom-time-input-container').forEach(container => {
+                        const timeInput = container.querySelector('.time-input-field');
+                        if (timeInput) timeInput.value = '';
+                        switchToDisplayView(container);
+                    });
+                });
+            };
+            setupTimingSectionToggle('add-cpb-btn', 'remove-cpb-btn', 'cpb-section');
+            setupTimingSectionToggle('add-aortic-clamp-btn', 'remove-aortic-clamp-btn', 'aortic-clamp-section');
+            setupTimingSectionToggle('add-circulatory-arrest-btn', 'remove-circulatory-arrest-btn', 'circulatory-arrest-section');
+            setupTimingSectionToggle('add-tourniquet-btn', 'remove-tourniquet-btn', 'tourniquet-section');
+            setupTimingSectionToggle('add-throat-pack-btn', 'remove-throat-pack-btn', 'throat-pack-section');
+
+
+            document.querySelectorAll('.modal-trigger').forEach(trigger => {
+                const modal = document.getElementById(trigger.dataset.modalId);
+                if (modal) {
+                    const closeBtns = modal.querySelectorAll('.modal-close-btn, .modal-cancel-btn, .modal-save-btn');
+                    const openModal = () => { modal.classList.remove('hidden'); modal.classList.add('flex'); };
+                    const closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+                    trigger.addEventListener('click', openModal);
+                    closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+                }
+            });
+
+            const ettCheckbox = document.getElementById('ett-checkbox');
+            const lmaCheckbox = document.getElementById('lma-checkbox');
+            const dltCheckbox = document.getElementById('dlt-checkbox');
+            const blockerCheckbox = document.getElementById('blocker-checkbox');
+            ettCheckbox.addEventListener('change', () => {
+                const isChecked = ettCheckbox.checked;
+                document.getElementById('ett-details').classList.toggle('hidden', !isChecked);
+                document.getElementById('ett-depth-details').classList.toggle('hidden', !isChecked);
+                document.getElementById('intubation-method-details').classList.toggle('hidden', !isChecked);
+            });
+            lmaCheckbox.addEventListener('change', () => {
+                document.getElementById('lma-details').classList.toggle('hidden', !lmaCheckbox.checked);
+            });
+            dltCheckbox.addEventListener('change', () => {
+                const isChecked = dltCheckbox.checked;
+                document.getElementById('dlt-details').classList.toggle('hidden', !isChecked);
+                document.getElementById('dlt-intubation-method-details').classList.toggle('hidden', !isChecked);
+            });
+            blockerCheckbox.addEventListener('change', () => {
+                document.getElementById('blocker-details').classList.toggle('hidden', !blockerCheckbox.checked);
+            });
+            
+            document.getElementById('toggle-vitals-view-btn').addEventListener('click', (e) => {
+                const chartContainer = document.getElementById('vitals-chart-container');
+                const tableContainer = document.getElementById('vitals-table-container');
+                const chartControls = document.getElementById('vitals-chart-controls');
+                const isChartVisible = !chartContainer.classList.contains('hidden');
+                
+                chartContainer.classList.toggle('hidden');
+                tableContainer.classList.toggle('hidden');
+                
+                if (isChartVisible) {
+                    e.target.textContent = 'Show Chart';
+                    chartControls.classList.add('hidden');
+                } else {
+                    e.target.textContent = 'Show Table';
+                     chartControls.classList.remove('hidden');
+                    updateVitalsChart();
+                }
+            });
+
+            document.querySelectorAll('.chart-control').forEach(checkbox => {
+                checkbox.addEventListener('change', updateVitalsChart);
+            });
+
+            addEventListenersForTotals();
+            initializeVitalsChart();
+            
+            // Arrow key navigation for tables
+            document.querySelectorAll('table').forEach(table => {
+                table.addEventListener('keydown', function(e) {
+                    const target = e.target;
+                    const isInput = target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.closest('.custom-time-input-container');
+                    if (!isInput) return;
+
+                    const key = e.key;
+                    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
+                    
+                    e.preventDefault();
+                    const currentCell = target.closest('td');
+                    const currentRow = currentCell.parentElement;
+                    const allRows = Array.from(currentRow.parentElement.children);
+                    const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+                    const rowIndex = allRows.indexOf(currentRow);
+                    let nextElement = null;
+
+                    if (key === 'ArrowUp' && rowIndex > 0) {
+                        const targetCell = allRows[rowIndex - 1].children[cellIndex];
+                        nextElement = targetCell ? targetCell.querySelector('input, select, button') : null;
+                    } else if (key === 'ArrowDown' && rowIndex < allRows.length - 1) {
+                        const targetCell = allRows[rowIndex + 1].children[cellIndex];
+                        nextElement = targetCell ? targetCell.querySelector('input, select, button') : null;
+                    } else if (key === 'ArrowLeft') {
+                        let current = currentCell;
+                        while(current = current.previousElementSibling) {
+                           const focusable = current.querySelector('input, select, button');
+                           if (focusable) { nextElement = focusable; break; }
+                        }
+                    } else if (key === 'ArrowRight') {
+                        let current = currentCell;
+                        while(current = current.nextElementSibling) {
+                           const focusable = current.querySelector('input, select, button');
+                           if (focusable) { nextElement = focusable; break; }
+                        }
+                    }
+                    if (nextElement) {
+                        nextElement.focus();
+                        if (nextElement.tagName === 'INPUT') nextElement.select();
+                    }
+                });
+            });
+
+            // Initial Rows
+            for (let i = 0; i < 3; i++) addBolusRow();
+            for (let i = 0; i < 3; i++) addInfusionRow();
+            for (let i = 0; i < 3; i++) addIvFluidRow();
+            addVitalRow();
+            for (let i = 0; i < 3; i++) addBloodProductRow();
+            addAbgRow();
+            addAnticoagulantRow();
+            for (let i = 0; i < 3; i++) addIcuInfusionRow();
+            updateAllTotals();
+
+            if(localStorage.getItem('anesthesiaRecord')) {
+                setTimeout(() => loadForm(), 100);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
